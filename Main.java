@@ -9,7 +9,6 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // ☁️ CLOUD DEPLOYMENT LOGIC:
-        // Use the port provided by the cloud (Render), or default to 6379 for local testing.
         int port = 6379; 
         String envPort = System.getenv("PORT");
         if (envPort != null) {
@@ -39,30 +38,55 @@ public class Main {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                // PARSE COMMAND: "SET key value" or "GET key"
-                String[] parts = inputLine.split(" ");
-                String command = parts[0].toUpperCase();
+            // Read the first line of the request
+            String inputLine = in.readLine();
+            if (inputLine == null) return;
 
-                if (command.equals("SET") && parts.length >= 3) {
-                    dataStore.put(parts[1], parts[2]);
-                    out.println("OK");
-                } 
-                else if (command.equals("GET") && parts.length >= 2) {
-                    String value = dataStore.getOrDefault(parts[1], "(nil)");
-                    out.println(value);
-                } 
-                else if (command.equals("EXIT")) {
-                    out.println("Bye!");
-                    break;
-                } 
-                else {
-                    out.println("ERROR: Unknown Command");
-                }
+            // 🔍 HEALTH CHECK: Is this a Browser/HTTP request?
+            // If the request contains "HTTP", we assume it's a browser check from Render.
+            if (inputLine.contains("HTTP/1.1") || inputLine.contains("HTTP/1.0")) {
+                // Send a valid HTTP response so Render knows we are healthy
+                out.println("HTTP/1.1 200 OK");
+                out.println("Content-Type: text/html");
+                out.println(); // Standard HTTP blank line separation
+                out.println("<html><body><h1>&#9889; MiniRedis is Live!</h1><p>The TCP Server is running.</p></body></html>");
+                return; // Close connection immediately for browsers
             }
+
+            // ⚡ STANDARD REDIS LOGIC (for real clients)
+            // Process the first line we already read
+            processCommand(inputLine, out);
+
+            // Process the rest of the lines
+            while ((inputLine = in.readLine()) != null) {
+                processCommand(inputLine, out);
+            }
+
         } catch (IOException e) {
             System.out.println("Client disconnected.");
+        }
+    }
+
+    // Helper method to handle the specific Redis commands
+    private static void processCommand(String inputLine, PrintWriter out) {
+        String[] parts = inputLine.split(" ");
+        if (parts.length == 0) return;
+        
+        String command = parts[0].toUpperCase();
+
+        if (command.equals("SET") && parts.length >= 3) {
+            dataStore.put(parts[1], parts[2]);
+            out.println("OK");
+        } 
+        else if (command.equals("GET") && parts.length >= 2) {
+            String value = dataStore.getOrDefault(parts[1], "(nil)");
+            out.println(value);
+        } 
+        else if (command.equals("EXIT")) {
+            out.println("Bye!");
+        } 
+        else {
+            out.println("ERROR: Unknown Command");
         }
     }
 }
