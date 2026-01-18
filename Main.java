@@ -39,34 +39,42 @@ public class Main {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
             // Read the first line of the request
-            String inputLine = in.readLine();
-            if (inputLine == null) return;
+            String firstLine = in.readLine();
+            if (firstLine == null) return;
 
             // 🔍 HEALTH CHECK: Is this a Browser/HTTP request?
-            // If the request contains "HTTP", we assume it's a browser check from Render.
-            if (inputLine.contains("HTTP/1.1") || inputLine.contains("HTTP/1.0")) {
-                // Send a valid HTTP response so Render knows we are healthy
+            if (firstLine.contains("HTTP")) {
+                // 1. DRAIN HEADERS: Read until the browser is done talking
+                // If we don't do this, the Load Balancer thinks we crashed.
+                while (in.ready()) {
+                    in.read(); 
+                }
+
+                // 2. SEND VALID RESPONSE
+                String html = "<html><body><h1>&#9889; MiniRedis is Live!</h1><p>The TCP Server is running.</p></body></html>";
+                
                 out.println("HTTP/1.1 200 OK");
                 out.println("Content-Type: text/html");
-                out.println(); // Standard HTTP blank line separation
-                out.println("<html><body><h1>&#9889; MiniRedis is Live!</h1><p>The TCP Server is running.</p></body></html>");
-                return; // Close connection immediately for browsers
+                out.println("Content-Length: " + html.length());
+                out.println("Connection: close");
+                out.println(); // Mandatory blank line
+                out.println(html);
+                out.flush();
+                return; // Now we can safely close
             }
 
             // ⚡ STANDARD REDIS LOGIC (for real clients)
-            // Process the first line we already read
-            processCommand(inputLine, out);
+            processCommand(firstLine, out);
 
-            // Process the rest of the lines
+            String inputLine;
             while ((inputLine = in.readLine()) != null) {
                 processCommand(inputLine, out);
             }
 
         } catch (IOException e) {
-            System.out.println("Client disconnected.");
+            // Client disconnected normally
         }
     }
-
     // Helper method to handle the specific Redis commands
     private static void processCommand(String inputLine, PrintWriter out) {
         String[] parts = inputLine.split(" ");
