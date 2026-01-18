@@ -8,10 +8,18 @@ public class Main {
     private static final Map<String, String> dataStore = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws IOException {
-        System.out.println("🚀 MiniRedis Server starting on port 6379...");
+        // ☁️ CLOUD DEPLOYMENT LOGIC:
+        // Use the port provided by the cloud (Render), or default to 6379 for local testing.
+        int port = 6379; 
+        String envPort = System.getenv("PORT");
+        if (envPort != null) {
+            port = Integer.parseInt(envPort);
+        }
+
+        System.out.println("🚀 MiniRedis Server starting on port " + port + "...");
         
-        // 1. Listen on Port 6379
-        ServerSocket serverSocket = new ServerSocket(6379);
+        // 1. Listen on the dynamic Port
+        ServerSocket serverSocket = new ServerSocket(port);
         
         // 2. ThreadPool to handle multiple clients at once
         ExecutorService threadPool = Executors.newCachedThreadPool();
