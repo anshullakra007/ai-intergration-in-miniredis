@@ -7,7 +7,7 @@
 
 MiniRedis is a lightweight, multi-threaded key-value store built from scratch using **Raw Java Sockets** (No frameworks). It mimics the core functionality of Redis, handling concurrent client connections via a custom TCP protocol.
 
-🚀 **Live Server Address:** `miniredis-xyz.onrender.com` (Requires TCP Client)
+🚀 **Live Server Address:** `miniredis.onrender.com` (Requires TCP Client)
 
 ---
 
