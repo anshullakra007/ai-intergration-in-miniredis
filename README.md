@@ -7,34 +7,50 @@
 
 **MiniRedis** is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using **Raw Java Sockets** without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving **sub-millisecond latencies** and **94,600+ ops/sec** throughput.
 
-🚀 **Live Server Address:** `miniredis.onrender.com` (Connect via TCP Client / Netcat)  
-📖 **Interactive Storybook Landing Page:** Visit `https://miniredis.onrender.com` in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
+🚀 **Live Server Address:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
+📖 **Interactive Storybook Landing Page:** Visit [https://miniredis.onrender.com](https://miniredis.onrender.com) in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
 
 ---
 
 ## 🏗️ System Architecture & Threading Model
 
 ```mermaid
-graph TD
-    TCP_Client[TCP Client / Netcat] -->|Raw TCP Stream| Server[ServerSocket :6379 / $PORT]
-    HTTP_Client[HTTP / Cloud Load Balancer] -->|HTTP GET / Health Check| Server
-
-    Server -->|ServerSocket.accept| Pool[ExecutorService CachedThreadPool]
-    Pool -->|Spawn Dedicated Thread| Handler[handleClient Worker Thread]
-
-    subgraph "Protocol Detection & Command Routing"
-        Handler -->|First Line Parse| Check{Is HTTP Request?}
-        
-        Check -->|Yes: HTTP Header| HTTP_Res[Drain Headers & Send HTTP 200 OK HTML]
-        Check -->|No: Redis Protocol| Redis_Cmd[processCommand: SET / GET / EXIT]
+flowchart TB
+    subgraph Clients ["Client Layer"]
+        TCP_Client["TCP Client (Netcat / CLI)"]
+        HTTP_Client["HTTP Client (Browser / Load Balancer)"]
     end
 
-    subgraph "Thread-Safe In-Memory Core"
-        Redis_Cmd <-->|Lock-Free / Lock-Stripping Atomic Access| Store[(ConcurrentHashMap DataStore)]
+    subgraph Network ["Kernel Socket Layer"]
+        Server["ServerSocket (:6379 / $PORT)"]
+        Pool["ExecutorService (CachedThreadPool)"]
+        Handler["handleClient (Dedicated Worker Thread)"]
     end
 
-    HTTP_Res -->|Close Socket| HTTP_Client
-    Redis_Cmd -->|OK / Value / nil| TCP_Client
+    subgraph Router ["Protocol Detection & Routing"]
+        Check{"Is HTTP Request?"}
+        HTTP_Res["Serve Interactive Storybook (index.html)"]
+        Redis_Cmd["processCommand (SET / GET / DEL / PING)"]
+    end
+
+    subgraph Storage ["Thread-Safe In-Memory Core"]
+        Store[("ConcurrentHashMap (Lock-Stripped Store)")]
+    end
+
+    TCP_Client -->|"Raw TCP Stream"| Server
+    HTTP_Client -->|"HTTP GET / Health Check"| Server
+
+    Server -->|"ServerSocket.accept()"| Pool
+    Pool -->|"Spawn Worker"| Handler
+    Handler -->|"First Line Parse"| Check
+
+    Check -->|"Yes (HTTP Signature)"| HTTP_Res
+    Check -->|"No (Redis Protocol)"| Redis_Cmd
+
+    Redis_Cmd <-->|"Atomic CAS / O(1) Access"| Store
+
+    HTTP_Res -->|"HTTP 200 OK (HTML)"| HTTP_Client
+    Redis_Cmd -->|"Redis Response (+OK / $val)"| TCP_Client
 ```
 
 ### Key Architectural Highlights
