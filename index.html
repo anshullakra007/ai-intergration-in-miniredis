@@ -3,24 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MiniRedis — The Story of a Multi-Threaded TCP Key-Value Engine</title>
+  <title>MiniRedis — Multi-Threaded TCP Storage Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #0a0e17;
-      --bg-panel: #111827;
-      --bg-card: #172033;
-      --border: #23304c;
-      --border-glow: #ff6b35;
-      --text-main: #e2e8f0;
+      /* Tailored Obsidian & Slate Neutral Palette */
+      --bg-base: #07080a;
+      --bg-surface: #0d0f14;
+      --bg-elevated: #13161f;
+      --bg-card: #11131a;
+      
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-default: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(239, 68, 68, 0.4);
+
+      --text-main: #f1f5f9;
       --text-muted: #94a3b8;
-      --primary: #ff6b35;
-      --primary-hover: #ff8555;
-      --accent-cyan: #00d4ff;
-      --accent-emerald: #10b981;
-      --accent-purple: #a855f7;
+      --text-subtle: #64748b;
+
+      /* Refined Redis Vermilion / Coral Accent - Used sparingly */
+      --accent: #ef4444;
+      --accent-hover: #f87171;
+      --accent-muted: rgba(239, 68, 68, 0.12);
+      
+      /* Semantic Functional Accents */
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.1);
+      --amber: #f59e0b;
+      --cyan: #38bdf8;
     }
 
     * {
@@ -30,596 +42,629 @@
     }
 
     body {
-      background-color: var(--bg-main);
+      background-color: var(--bg-base);
       color: var(--text-main);
-      font-family: 'Outfit', -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
       background-image: 
-        radial-gradient(circle at 15% 10%, rgba(255, 107, 53, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 90%, rgba(0, 212, 255, 0.06) 0%, transparent 40%);
+        linear-gradient(var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+      background-size: 64px 64px;
+      background-position: center top;
     }
 
-    /* Top Navigation Header */
-    .header {
+    /* Minimalist Technical Navbar */
+    .nav-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 40px;
-      background: rgba(17, 24, 39, 0.85);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      height: 60px;
+      padding: 0 40px;
+      background: rgba(7, 8, 10, 0.85);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 100;
     }
 
-    .logo-group {
+    .brand-group {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    .logo-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #ff6b35 0%, #f72585 100%);
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 1.35rem;
-      font-weight: 800;
-      box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
     }
 
-    .logo-title {
-      font-size: 1.4rem;
-      font-weight: 800;
+    .brand-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
-      background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .logo-subtitle {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .server-status-badge {
-      display: inline-flex;
+      color: #fff;
+      display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #10b981;
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: 20px;
+    }
+
+    .brand-version {
       font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-subtle);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .nav-stats {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 0.825rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--emerald-bg);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: var(--emerald);
+      font-weight: 500;
+      font-size: 0.75rem;
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.6; }
-      100% { transform: scale(1); opacity: 1; }
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
     }
 
     /* Main Container */
     .container {
-      max-width: 1240px;
+      max-width: 1180px;
       width: 100%;
       margin: 0 auto;
-      padding: 36px 24px;
+      padding: 48px 24px;
       display: flex;
       flex-direction: column;
-      gap: 32px;
+      gap: 36px;
     }
 
-    /* Hero Banner / Story Intro */
+    /* Architectural Hero */
     .hero {
-      text-align: center;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 20px 0;
+      gap: 14px;
+      max-width: 760px;
     }
 
-    .hero-tag {
-      background: rgba(255, 107, 53, 0.15);
-      color: var(--primary);
+    .hero-kicker {
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: 600;
+      color: var(--text-subtle);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 107, 53, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-kicker::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
     }
 
     .hero-title {
-      font-size: 2.75rem;
-      font-weight: 800;
-      line-height: 1.15;
-      max-width: 800px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      color: #fff;
     }
 
-    .hero-title span {
-      background: linear-gradient(135deg, #ff6b35 0%, #ff9e00 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hero-desc {
-      font-size: 1.1rem;
+    .hero-subtitle {
+      font-size: 1.05rem;
       color: var(--text-muted);
-      max-width: 680px;
       line-height: 1.6;
     }
 
-    /* Interactive Simulation Trigger Bar */
-    .sim-bar {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 24px;
+    /* Minimalist Timeline Navigation */
+    .timeline-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      padding: 6px 8px;
+      gap: 12px;
+      overflow-x: auto;
     }
 
-    .sim-left {
+    .timeline-controls {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
+      padding-right: 12px;
+      border-right: 1px solid var(--border-subtle);
+      flex-shrink: 0;
     }
 
-    .play-btn {
-      background: linear-gradient(135deg, #ff6b35 0%, #f72585 100%);
+    .btn-walkthrough {
+      background: var(--accent);
       color: #fff;
       border: none;
-      padding: 10px 22px;
-      border-radius: 10px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 0.95rem;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.25s ease;
-      box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
+      gap: 6px;
+      transition: all 0.2s ease;
     }
 
-    .play-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+    .btn-walkthrough:hover:not(:disabled) {
+      background: var(--accent-hover);
     }
 
-    .play-btn:disabled {
-      opacity: 0.6;
+    .btn-walkthrough:disabled {
+      opacity: 0.7;
       cursor: not-allowed;
-      transform: none;
     }
 
-    .sim-status {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--accent-cyan);
+    .timeline-steps {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
     }
 
-    /* Chapters Navigation Tabs */
-    .chapters-nav {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-    }
-
-    @media (max-width: 900px) {
-      .chapters-nav {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .header {
-        padding: 16px 20px;
-      }
-    }
-
-    .chapter-tab {
+    .step-tab {
+      flex: 1;
       background: transparent;
       border: none;
-      border-right: 1px solid var(--border);
-      padding: 16px 18px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
+      color: var(--text-subtle);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 10px 14px;
+      border-radius: 6px;
       cursor: pointer;
       text-align: left;
-      transition: all 0.25s ease;
-      position: relative;
-    }
-
-    .chapter-tab:last-child {
-      border-right: none;
-    }
-
-    .chapter-tab:hover {
-      background: rgba(255, 107, 53, 0.06);
-    }
-
-    .chapter-tab.active {
-      background: rgba(255, 107, 53, 0.1);
-    }
-
-    .chapter-tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: var(--primary);
-      box-shadow: 0 0 10px var(--primary);
-    }
-
-    .chapter-num {
-      font-size: 0.725rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--primary);
-      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      white-space: nowrap;
     }
 
-    .chapter-title {
-      font-size: 0.95rem;
-      font-weight: 700;
+    .step-tab:hover {
       color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
     }
 
-    .chapter-subtitle {
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .step-tab.active {
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-weight: 600;
     }
 
-    /* Chapter Content Area (2 Columns) */
-    .story-card {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px;
+    .step-index {
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Main Stage Grid (Left Narrative + Right Debugger Widget) */
+    .stage-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 40px;
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 40px;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
       align-items: start;
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4);
     }
 
-    @media (max-width: 950px) {
-      .story-card {
+    @media (max-width: 960px) {
+      .stage-card {
         grid-template-columns: 1fr;
+        padding: 28px;
+      }
+      .nav-stats {
+        display: none;
       }
     }
 
-    .story-left {
+    /* Left Narrative Column */
+    .narrative-col {
       display: flex;
       flex-direction: column;
       gap: 20px;
     }
 
-    .story-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 14px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      background: rgba(0, 212, 255, 0.15);
-      color: var(--accent-cyan);
-      width: fit-content;
+    .chapter-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    .story-main-title {
-      font-size: 2rem;
-      font-weight: 800;
+    .chapter-heading {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
       line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    .chapter-body {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .chapter-body code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: rgba(255, 255, 255, 0.06);
       color: #fff;
+      padding: 2px 5px;
+      border-radius: 4px;
     }
 
-    .story-narrative {
-      font-size: 1.05rem;
-      line-height: 1.7;
-      color: #cbd5e1;
-    }
-
-    .story-narrative strong {
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .highlights-list {
+    .feature-list {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      margin-top: 6px;
+      gap: 12px;
+      margin-top: 4px;
     }
 
-    .highlight-box {
+    .feature-item {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
+      gap: 12px;
+      font-size: 0.875rem;
+      color: var(--text-main);
+      line-height: 1.5;
     }
 
-    .highlight-icon {
-      color: var(--primary);
-      font-size: 1.2rem;
-      margin-top: 2px;
+    .feature-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-default);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
     }
 
-    /* Right Column Interactive Widget */
-    .story-right {
+    .feature-check svg {
+      width: 11px;
+      height: 11px;
+      stroke-width: 2.5;
+      stroke: currentColor;
+      fill: none;
+    }
+
+    /* Right Debugger/Inspector Widget Column */
+    .widget-col {
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.3);
     }
 
     .widget-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px dashed var(--border);
-      padding-bottom: 14px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .widget-badge {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.725rem;
-      font-weight: 700;
-    }
-
-    /* Act I: TCP Handshake Box */
-    .tcp-box {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .tcp-packet {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(0, 212, 255, 0.08);
-      border: 1px solid rgba(0, 212, 255, 0.2);
-      border-radius: 10px;
-      padding: 12px 16px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.725rem;
+      color: var(--text-muted);
     }
 
-    /* Act II: Concurrency Slider Box */
-    .slider-box {
+    .widget-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .widget-content {
+      padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    .custom-range {
+    /* Act I: TCP Packet Trace */
+    .trace-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .trace-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+    }
+
+    .trace-ts {
+      color: var(--text-subtle);
+    }
+
+    .trace-msg {
+      color: #fff;
+    }
+
+    /* Act II: Refined Slider & Thread Metrics */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+    }
+
+    .clean-slider {
       width: 100%;
-      height: 8px;
+      height: 4px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
+      border-radius: 2px;
       outline: none;
       -webkit-appearance: none;
       cursor: pointer;
     }
 
-    .custom-range::-webkit-slider-thumb {
+    .clean-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 22px;
-      height: 22px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      background: var(--primary);
+      background: #fff;
+      border: 2px solid var(--accent);
       cursor: pointer;
-      box-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
     }
 
-    .stat-row {
+    /* Act III: Protocol Selector */
+    .btn-group {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 8px;
     }
 
-    .stat-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
+    .btn-switch {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-default);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
       text-align: center;
     }
 
-    .stat-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 4px;
+    .btn-switch:hover, .btn-switch.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
     }
 
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    /* Act IV: In-Browser Interactive Terminal */
-    .terminal-box {
-      background: #080c14;
-      border: 1px solid #1e293b;
-      border-radius: 10px;
+    .code-console {
+      background: #08090d;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
       padding: 14px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      min-height: 110px;
     }
 
+    .code-console .hl-cmd { color: #fff; }
+    .code-console .hl-res { color: var(--emerald); }
+    .code-console .hl-info { color: var(--cyan); }
+
+    /* Act IV: Sleek Terminal & Table */
     .terminal-output {
-      min-height: 130px;
-      max-height: 180px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      min-height: 95px;
+      max-height: 140px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      color: #38bdf8;
+      gap: 4px;
     }
 
-    .terminal-line {
+    .term-line {
       display: flex;
       gap: 8px;
+      color: var(--text-main);
     }
 
-    .terminal-line.err {
-      color: #f85149;
-    }
+    .term-line.ok { color: var(--emerald); }
+    .term-line.err { color: var(--accent); }
 
-    .terminal-line.success {
-      color: #10b981;
-    }
-
-    .terminal-input-row {
+    .term-form {
       display: flex;
       align-items: center;
       gap: 8px;
-      border-top: 1px solid #1e293b;
-      padding-top: 10px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
     }
 
-    .terminal-prompt {
-      color: var(--primary);
-      font-weight: 700;
+    .term-prompt {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-weight: 600;
     }
 
-    .terminal-input {
+    .term-input {
       flex: 1;
       background: transparent;
       border: none;
       color: #fff;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       outline: none;
     }
 
-    .terminal-run-btn {
-      background: var(--primary);
+    .term-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-default);
       color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
       cursor: pointer;
-      font-size: 0.75rem;
     }
 
-    /* Store Inspector Box (Key-Value visual table) */
-    .kv-table {
+    .table-inspector {
       width: 100%;
       border-collapse: collapse;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+      margin-top: 4px;
     }
 
-    .kv-table th, .kv-table td {
-      padding: 8px 10px;
+    .table-inspector th, .table-inspector td {
+      padding: 6px 8px;
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .kv-table th {
-      color: var(--text-muted);
-      font-weight: 600;
+    .table-inspector th {
+      color: var(--text-subtle);
+      font-weight: 500;
     }
 
-    .kv-table td {
-      color: #e2e8f0;
+    .table-inspector td {
+      color: var(--text-main);
     }
 
-    /* Footer Navigation */
-    .story-footer {
+    /* Footer Pagination */
+    .stage-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 40px;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
     }
 
-    .nav-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
+    .footer-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-subtle);
+    }
+
+    .btn-nav {
+      background: transparent;
+      border: 1px solid var(--border-default);
+      color: var(--text-muted);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
-    .nav-btn:hover:not(:disabled) {
-      background: rgba(255, 107, 53, 0.15);
-      border-color: var(--primary);
+    .btn-nav:hover:not(:disabled) {
       color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
     }
 
-    .nav-btn:disabled {
+    .btn-nav:disabled {
       opacity: 0.35;
       cursor: not-allowed;
     }
@@ -627,368 +672,364 @@
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
-  <header class="header">
-    <div class="logo-group">
-      <div class="logo-icon">⚡</div>
-      <div>
-        <div class="logo-title">MiniRedis</div>
-        <div class="logo-subtitle">Multi-Threaded TCP Key-Value Store • Java 21</div>
+  <!-- Minimalist Technical Navbar -->
+  <header class="nav-header">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="brand-name">
+        MiniRedis
+        <span class="brand-version">2.1.0 • RAW TCP</span>
       </div>
     </div>
-    <div class="server-status-badge">
-      <span class="status-dot"></span>
-      <span>TCP :6379 LIVE • 94,600+ ops/sec</span>
+    <div class="nav-stats">
+      <span>throughput: 94,600 ops/s</span>
+      <span>latency: 0.55ms</span>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>port :6379 live</span>
+      </div>
     </div>
   </header>
 
-  <!-- Main Content Container -->
+  <!-- Main Container -->
   <main class="container">
     
-    <!-- Hero Banner -->
+    <!-- Editorial Architectural Hero -->
     <section class="hero">
-      <div class="hero-tag">📖 Architecture Storybook</div>
-      <h1 class="hero-title">How MiniRedis Serves <span>500 Concurrent Clients</span> in Sub-Millisecond Latency</h1>
-      <p class="hero-desc">
-        Explore the real-time architectural story of a high-performance in-memory database built from scratch using Raw Java Sockets and Lock-Stripping concurrency.
+      <div class="hero-kicker">Architecture Walkthrough</div>
+      <h1 class="hero-title">An in-memory TCP database engineered from scratch in raw Java.</h1>
+      <p class="hero-subtitle">
+        MiniRedis strips away web frameworks to speak directly to the OS kernel—using socket byte streams, CachedThreadPool concurrency, and lock-stripping atomic hash buckets.
       </p>
     </section>
 
-    <!-- Interactive Simulation Action Bar -->
-    <section class="sim-bar">
-      <div class="sim-left">
-        <button id="simPlayBtn" class="play-btn" onclick="startFullSimulation()">
-          ▶ Watch Real-Time Request Journey
+    <!-- Minimalist Timeline Steps Bar -->
+    <nav class="timeline-bar">
+      <div class="timeline-controls">
+        <button id="btnPlay" class="btn-walkthrough" onclick="startWalkthrough()">
+          ▶ Walkthrough
         </button>
-        <span id="simStatusText" class="sim-status">Status: Server Listening on Port 6379 • 0% Lock Contention</span>
       </div>
-      <div style="font-size: 0.85rem; color: #94a3b8;">
-        Use <kbd style="background: #1e293b; padding: 2px 6px; border-radius: 4px; color: #fff;">←</kbd> / <kbd style="background: #1e293b; padding: 2px 6px; border-radius: 4px; color: #fff;">→</kbd> keys to navigate chapters
+      <div class="timeline-steps">
+        <button class="step-tab active" onclick="setStep(0)">
+          <span class="step-index">01</span>
+          <span>Socket Kernel</span>
+        </button>
+        <button class="step-tab" onclick="setStep(1)">
+          <span class="step-index">02</span>
+          <span>Thread Pool</span>
+        </button>
+        <button class="step-tab" onclick="setStep(3)">
+          <span class="step-index">03</span>
+          <span>Protocol Router</span>
+        </button>
+        <button class="step-tab" onclick="setStep(4)">
+          <span class="step-index">04</span>
+          <span>Lock-Free Store</span>
+        </button>
+        <button class="step-tab" onclick="setStep(5)">
+          <span class="step-index">05</span>
+          <span>Benchmarks</span>
+        </button>
       </div>
-    </section>
-
-    <!-- Chapter Navigation Tabs -->
-    <nav class="chapters-nav" id="chaptersNav">
-      <button class="chapter-tab active" onclick="setChapter(0)">
-        <div class="chapter-num">Act I</div>
-        <div class="chapter-title">Raw Socket Awakening</div>
-        <div class="chapter-subtitle">No Frameworks, Just Kernel Sockets</div>
-      </button>
-      <button class="chapter-tab" onclick="setChapter(1)">
-        <div class="chapter-num">Act II</div>
-        <div class="chapter-title">Multi-Threaded Highway</div>
-        <div class="chapter-subtitle">CachedThreadPool & Offloading</div>
-      </button>
-      <button class="chapter-tab" onclick="setChapter(2)">
-        <div class="chapter-num">Act III</div>
-        <div class="chapter-title">Protocol Intelligence</div>
-        <div class="chapter-subtitle">TCP Protocol vs. HTTP Draining</div>
-      </button>
-      <button class="chapter-tab" onclick="setChapter(3)">
-        <div class="chapter-num">Act IV</div>
-        <div class="chapter-title">Lock-Free Atomic Core</div>
-        <div class="chapter-subtitle">ConcurrentHashMap & Commands</div>
-      </button>
-      <button class="chapter-tab" onclick="setChapter(4)">
-        <div class="chapter-num">Act V</div>
-        <div class="chapter-title">Sub-Millisecond Victory</div>
-        <div class="chapter-subtitle">94,600+ Ops/Sec Benchmark</div>
-      </button>
     </nav>
 
-    <!-- Main Story Card (2 Columns) -->
-    <article class="story-card" id="storyCard">
-      <!-- Left Column: Narrative Content (Dynamically Updated) -->
-      <div class="story-left" id="storyLeft">
-        <!-- Injected via JavaScript -->
+    <!-- Main Architectural Stage Card -->
+    <article class="stage-card">
+      <!-- Left Narrative Column (Updated dynamically) -->
+      <div class="narrative-col" id="narrativeCol">
+        <!-- Injected via JS -->
       </div>
 
-      <!-- Right Column: Interactive Widget (Dynamically Updated) -->
-      <div class="story-right" id="storyRight">
-        <!-- Injected via JavaScript -->
+      <!-- Right Interactive Debugger Column (Updated dynamically) -->
+      <div class="widget-col" id="widgetCol">
+        <!-- Injected via JS -->
       </div>
     </article>
+
+    <!-- Footer Pagination -->
+    <footer class="stage-footer">
+      <span class="footer-counter" id="stepCounter">Step 01 of 05</span>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-nav" id="prevBtn" onclick="prevStep()" disabled>
+          ← Previous
+        </button>
+        <button class="btn-nav" id="nextBtn" onclick="nextStep()">
+          Next Step →
+        </button>
+      </div>
+    </footer>
   </main>
 
-  <!-- Footer Navigation -->
-  <footer class="story-footer">
-    <div style="font-size: 0.9rem; color: #94a3b8;">
-      Chapter <strong id="chapterCounter" style="color: #fff;">1</strong> of 5
-    </div>
-    <div style="display: flex; gap: 12px;">
-      <button class="nav-btn" id="prevBtn" onclick="prevChapter()" disabled>
-        ← Previous Chapter
-      </button>
-      <button class="nav-btn" id="nextBtn" onclick="nextChapter()">
-        Next Chapter →
-      </button>
-    </div>
-  </footer>
-
-  <!-- Interactive JavaScript Logic -->
   <script>
-    // In-memory data store simulation for the interactive terminal
-    const localStore = {
+    const kvStore = {
       "user:1001": "Anshul Kumar",
-      "server:version": "2.1-RELEASE",
-      "stats:ops": "94600"
+      "server:engine": "raw-socket-tcp",
+      "stats:concurrency": "500-threads"
     };
 
-    const chaptersData = [
+    const stepsData = [
       {
-        tag: "RAW SOCKET ENGINE",
-        mainTitle: "When a TCP client connects, there are no heavy web frameworks.",
-        narrative: `Most web applications rely on massive HTTP frameworks like Spring Boot or Tomcat. MiniRedis strips away all unnecessary abstractions, binding directly to the OS kernel via raw <strong>java.net.ServerSocket</strong> on TCP port <strong>6379</strong>. When a client connects via Netcat or a TCP driver, a 3-way TCP handshake completes in microseconds.`,
-        highlights: [
+        eyebrow: "01 / SOCKET KERNEL ARCHITECTURE",
+        heading: "Bypassing HTTP frameworks for direct kernel socket communication.",
+        body: `Conventional backend servers rely on large web frameworks that wrap requests in heavy HTTP envelope abstractions. MiniRedis removes this overhead by binding directly to the OS network kernel using raw <code>java.net.ServerSocket</code> on port <code>6379</code>.`,
+        features: [
           {
-            title: "Zero-Overhead Handshake",
-            desc: "Direct TCP stream connection eliminates HTTP parsing overhead for Redis commands."
+            title: "Zero-Overhead Protocol",
+            desc: "Communicates via text-based TCP byte streams without HTTP header bloat."
           },
           {
-            title: "Dynamic Cloud Port Binding",
-            desc: "Automatically adapts to environment $PORT or defaults to standard Redis TCP port 6379."
+            title: "Non-Blocking Accept Loop",
+            desc: "The main ServerSocket listener thread accepts connections in microseconds."
           }
         ],
-        widgetType: "tcp"
+        widget: "tcp"
       },
       {
-        tag: "CONCURRENCY MODEL",
-        mainTitle: "How we handle 500 concurrent connections without blocking.",
-        narrative: `If a server handled TCP clients sequentially, one slow client would freeze the entire database. MiniRedis immediately offloads every accepted <strong>Socket</strong> to a <strong>CachedThreadPool (ExecutorService)</strong>. Dedicated worker threads (<code>handleClient</code>) execute concurrently across available CPU cores.`,
-        highlights: [
+        eyebrow: "02 / THREAD-PER-CLIENT CONCURRENCY",
+        heading: "Offloading TCP streams to a CachedThreadPool.",
+        body: `Single-threaded servers block when any client connection slows down. MiniRedis immediately offloads each connected <code>Socket</code> to an isolated worker thread from an <code>ExecutorService</code> cached thread pool, enabling true multi-core execution across up to 500 active sockets.`,
+        features: [
           {
-            title: "Thread-Per-Client Isolation",
-            desc: "Each connected socket gets an isolated input/output stream worker thread."
+            title: "Isolated I/O Streams",
+            desc: "Each client socket gets dedicated BufferedReader and PrintWriter instances."
           },
           {
-            title: "Dynamic Thread Scaling",
-            desc: "CachedThreadPool reuses idle threads and scales instantaneously during traffic spikes."
+            title: "Elastic Thread Pooling",
+            desc: "Threads are recycled across incoming requests, preventing thread starvation."
           }
         ],
-        widgetType: "slider"
+        widget: "slider"
       },
       {
-        tag: "PROTOCOL DETECTION",
-        mainTitle: "How can a TCP database also serve this very HTML webpage?",
-        narrative: `Cloud load balancers and web browsers send <strong>HTTP GET</strong> requests to check if a server is alive. If MiniRedis only spoke Redis TCP, it would crash on HTTP headers! When the first line arrives, MiniRedis inspects the byte stream: if it detects <code>HTTP</code>, it drains the headers and serves this storybook HTML with <code>HTTP/1.1 200 OK</code>. If it sees <code>SET/GET</code>, it routes to the memory engine!`,
-        highlights: [
+        eyebrow: "03 / PROTOCOL MULTIPLEXER",
+        heading: "Serving TCP Redis clients and HTTP browsers on a single port.",
+        body: `Cloud load balancers and browsers emit <code>HTTP GET /</code> health checks. To avoid socket disconnect errors, MiniRedis inspects the first stream byte: if an HTTP signature is detected, it drains headers and returns this HTML document. If Redis protocol is found, it routes to the memory store.`,
+        features: [
           {
-            title: "Dual-Protocol Multiplexer",
-            desc: "Seamlessly distinguishes between HTTP browser visits and raw TCP Redis clients."
+            title: "Header Draining Engine",
+            desc: "Safely consumes browser HTTP headers without dropping TCP connections."
           },
           {
-            title: "Header Draining Safety",
-            desc: "Prevents cloud load balancers (like Render or AWS) from flagging false health check failures."
+            title: "Dual-Protocol Compatibility",
+            desc: "Works natively with both Netcat TCP clients and standard web browsers."
           }
         ],
-        widgetType: "router"
+        widget: "router"
       },
       {
-        tag: "ATOMIC CORE",
-        mainTitle: "Why 500 parallel threads never corrupt the in-memory data.",
-        narrative: `With hundreds of threads reading and writing simultaneously, traditional synchronization with global locks would cause severe bottlenecks. MiniRedis utilizes a thread-safe <strong>ConcurrentHashMap</strong>, leveraging lock-stripping and atomic bucket-level CAS (Compare-And-Swap) instructions. Test it live in the console below!`,
-        highlights: [
+        eyebrow: "04 / ATOMIC CONCURRENTHASHMAP",
+        heading: "Lock-stripping memory access with zero contention.",
+        body: `When hundreds of threads access a shared data store, coarse global mutexes degrade performance. MiniRedis uses <code>ConcurrentHashMap</code> with lock-stripping and atomic compare-and-swap (CAS) instructions, allowing parallel writes across distinct hash buckets.`,
+        features: [
           {
-            title: "Lock-Stripping Concurrency",
-            desc: "Threads writing to different hash buckets never block each other."
+            title: "Bucket-Level Atomicity",
+            desc: "Concurrent SET and DEL operations execute without global locking."
           },
           {
-            title: "O(1) Atomic Operations",
-            desc: "SET, GET, and DEL commands execute in constant time with guaranteed thread safety."
+            title: "O(1) Command Processing",
+            desc: "Constant-time lookup performance even under heavy thread contention."
           }
         ],
-        widgetType: "terminal"
+        widget: "console"
       },
       {
-        tag: "PERFORMANCE TRIUMPH",
-        mainTitle: "94,600+ operations per second with 0.55ms mean latency.",
-        narrative: `Benchmarked across 10,000 concurrent socket requests using Python 3 and multi-threaded socket pools, MiniRedis proves that pure Java engineering can match or exceed C-based engines for lightweight caching workloads—maintaining <strong>100% data consistency</strong> and zero race conditions.`,
-        highlights: [
+        eyebrow: "05 / PERFORMANCE BENCHMARKS",
+        heading: "Sub-millisecond latency under 500 simultaneous socket connections.",
+        body: `Rigorously benchmarked across 10,000 concurrent socket operations using Python 3 and multi-threaded client pools, MiniRedis demonstrates that lean Java socket engineering delivers <code>0.55ms</code> average response times and <code>94,600 ops/s</code> throughput.`,
+        features: [
           {
-            title: "Sub-Millisecond Speed",
-            desc: "0.55ms mean latency with P99 tail latency staying under 3.22ms."
+            title: "99th Percentile Under 3.22ms",
+            desc: "Predictable tail latency distribution with zero Out-Of-Memory errors."
           },
           {
-            title: "100% Reliability Record",
-            desc: "Zero crashes or Out-Of-Memory errors under 500 simultaneous socket connections."
+            title: "100% Data Integrity",
+            desc: "Zero race conditions verified across high-concurrency multi-client stress tests."
           }
         ],
-        widgetType: "benchmark"
+        widget: "benchmark"
       }
     ];
 
-    let currentChapter = 0;
-    let simInterval = null;
-    let concurrentClients = 150;
+    let currentStep = 0;
+    let autoInterval = null;
+    let activeClients = 150;
 
-    function renderChapter(idx) {
-      currentChapter = idx;
-      const data = chaptersData[idx];
+    function setStep(idx) {
+      if (autoInterval && idx !== currentStep) clearInterval(autoInterval);
+      currentStep = idx;
+      const data = stepsData[idx];
 
-      // Update Nav Tabs
-      document.querySelectorAll('.chapter-tab').forEach((el, i) => {
+      // Update timeline tabs
+      document.querySelectorAll('.step-tab').forEach((el, i) => {
         el.classList.toggle('active', i === idx);
       });
 
-      // Update Counter & Buttons
-      document.getElementById('chapterCounter').innerText = (idx + 1);
+      // Update counter & nav buttons
+      document.getElementById('stepCounter').innerText = `Step 0${idx + 1} of 05`;
       document.getElementById('prevBtn').disabled = (idx === 0);
-      document.getElementById('nextBtn').disabled = (idx === chaptersData.length - 1);
+      document.getElementById('nextBtn').disabled = (idx === stepsData.length - 1);
 
       // Render Left Narrative
-      const leftHTML = `
-        <span class="story-tag">${data.tag}</span>
-        <h2 class="story-main-title">${data.mainTitle}</h2>
-        <p class="story-narrative">${data.narrative}</p>
-        <div class="highlights-list">
-          ${data.highlights.map(h => `
-            <div class="highlight-box">
-              <div class="highlight-icon">✓</div>
+      document.getElementById('narrativeCol').innerHTML = `
+        <div class="chapter-eyebrow">${data.eyebrow}</div>
+        <h2 class="chapter-heading">${data.heading}</h2>
+        <p class="chapter-body">${data.body}</p>
+        <div class="feature-list">
+          ${data.features.map(f => `
+            <div class="feature-item">
+              <div class="feature-check">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
               <div>
-                <strong style="display:block; color:#fff; font-size:0.95rem;">${h.title}</strong>
-                <span style="font-size:0.85rem; color:#94a3b8;">${h.desc}</span>
+                <strong style="color: #fff; font-weight: 600;">${f.title}: </strong>
+                <span style="color: var(--text-muted);">${f.desc}</span>
               </div>
             </div>
           `).join('')}
         </div>
       `;
-      document.getElementById('storyLeft').innerHTML = leftHTML;
 
-      // Render Right Interactive Widget
-      renderWidget(data.widgetType);
+      // Render Right Widget
+      renderWidget(data.widget);
     }
 
     function renderWidget(type) {
-      const rightEl = document.getElementById('storyRight');
+      const el = document.getElementById('widgetCol');
 
       if (type === 'tcp') {
-        rightEl.innerHTML = `
+        el.innerHTML = `
           <div class="widget-header">
-            <span>⚡ Interactive TCP Handshake</span>
-            <span class="widget-badge">Port :6379</span>
+            <span>TCP Handshake Tracer</span>
+            <span class="widget-tag">port :6379</span>
           </div>
-          <div class="tcp-box">
-            <div class="tcp-packet" id="tcpStep1">
-              <span>1. Client SYN ➔ ServerSocket:6379</span>
-              <span style="color:#00d4ff;">0.08 ms</span>
+          <div class="widget-content">
+            <div class="trace-list">
+              <div class="trace-row" id="p1">
+                <span class="trace-ts">+0.04 ms</span>
+                <span class="trace-msg">SYN ➔ ServerSocket.accept()</span>
+              </div>
+              <div class="trace-row" id="p2">
+                <span class="trace-ts">+0.09 ms</span>
+                <span class="trace-msg">SYN-ACK ➔ Client Socket</span>
+              </div>
+              <div class="trace-row" id="p3">
+                <span class="trace-ts">+0.12 ms</span>
+                <span class="trace-msg" style="color: var(--emerald);">ESTABLISHED • Stream Ready</span>
+              </div>
             </div>
-            <div class="tcp-packet" id="tcpStep2" style="background:rgba(255,107,53,0.08); border-color:rgba(255,107,53,0.2);">
-              <span>2. Server SYN-ACK ➔ Client Socket</span>
-              <span style="color:#ff6b35;">0.12 ms</span>
-            </div>
-            <div class="tcp-packet" id="tcpStep3" style="background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.2);">
-              <span>3. TCP Stream Ready (ESTABLISHED)</span>
-              <span style="color:#10b981;">0.15 ms</span>
-            </div>
-            <button class="play-btn" style="width:100%; justify-content:center; margin-top:8px;" onclick="simulateHandshake()">
-              ⚡ Test Socket Handshake
+            <button class="btn-nav" style="width:100%; justify-content:center;" onclick="traceHandshake()">
+              Trigger Handshake Trace
             </button>
           </div>
         `;
       } else if (type === 'slider') {
-        rightEl.innerHTML = `
+        el.innerHTML = `
           <div class="widget-header">
-            <span>🚀 Live Concurrency Simulator</span>
-            <span class="widget-badge" id="sliderBadge">${concurrentClients} Clients</span>
+            <span>CachedThreadPool Profiler</span>
+            <span class="widget-tag" id="clientBadge">${activeClients} Sockets</span>
           </div>
-          <div class="slider-box">
-            <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#e2e8f0;">
-              <span>Simulate Active TCP Connections:</span>
-              <strong style="color:#ff6b35;" id="sliderValDisplay">${concurrentClients} connections</strong>
+          <div class="widget-content">
+            <div class="metric-grid">
+              <div class="metric-card">
+                <div class="metric-value" id="workersDisplay">${activeClients}</div>
+                <div class="metric-label">Active Worker Threads</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" style="color: var(--emerald);">0.00%</div>
+                <div class="metric-label">Thread Block Contention</div>
+              </div>
             </div>
-            <input type="range" min="1" max="500" value="${concurrentClients}" class="custom-range" oninput="updateConcurrency(this.value)"/>
-            <div class="stat-row">
-              <div class="stat-card">
-                <div class="stat-val" id="workerCount">${Math.min(concurrentClients, 500)}</div>
-                <div class="stat-label">Active Worker Threads</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text-muted);">
+                <span>Simulate Concurrent Client Connections:</span>
+                <strong style="color:#fff;" id="sliderValDisplay">${activeClients}</strong>
               </div>
-              <div class="stat-card">
-                <div class="stat-val" style="color:#10b981;">0.00%</div>
-                <div class="stat-label">Socket Blocking Rate</div>
-              </div>
+              <input type="range" min="1" max="500" value="${activeClients}" class="clean-slider" oninput="updateClients(this.value)"/>
             </div>
           </div>
         `;
       } else if (type === 'router') {
-        rightEl.innerHTML = `
+        el.innerHTML = `
           <div class="widget-header">
-            <span>🔄 Protocol Intelligence Router</span>
-            <span class="widget-badge">Auto-Detect</span>
+            <span>Protocol Multiplexer</span>
+            <span class="widget-tag">stream parser</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <button class="nav-btn" style="justify-content:center;" onclick="testRoute('http')">
-                🌐 Send HTTP GET
+          <div class="widget-content">
+            <div class="btn-group">
+              <button class="btn-switch active" id="btnHttp" onclick="showRoute('http')">
+                HTTP GET /
               </button>
-              <button class="nav-btn" style="justify-content:center; border-color:#ff6b35;" onclick="testRoute('redis')">
-                ⚡ Send Redis SET
+              <button class="btn-switch" id="btnRedis" onclick="showRoute('redis')">
+                SET user:1001
               </button>
             </div>
-            <div id="routeOutput" style="background:#080c14; border:1px solid #1e293b; border-radius:10px; padding:16px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; min-height:110px; display:flex; flex-direction:column; gap:6px;">
-              <span style="color:#94a3b8;">// Click a button above to test how Main.java routes traffic...</span>
+            <div class="code-console" id="routerOutput">
+              <div class="hl-cmd">> GET / HTTP/1.1 (Host: localhost:6379)</div>
+              <div class="hl-info">// First byte signature matches 'HTTP'</div>
+              <div>// Draining browser HTTP request headers...</div>
+              <div class="hl-res">HTTP/1.1 200 OK • Serving Storybook HTML</div>
             </div>
           </div>
         `;
-      } else if (type === 'terminal') {
-        rightEl.innerHTML = `
+      } else if (type === 'console') {
+        el.innerHTML = `
           <div class="widget-header">
-            <span>💻 Live MiniRedis TCP Console</span>
-            <span class="widget-badge">In-Memory Store</span>
+            <span>MiniRedis TCP Terminal</span>
+            <span class="widget-tag">in-memory store</span>
           </div>
-          <div class="terminal-box">
+          <div class="widget-content">
             <div class="terminal-output" id="termOutput">
-              <div class="terminal-line"><span>// Connected to MiniRedis localhost:6379</span></div>
-              <div class="terminal-line success"><span>> PING</span></div>
-              <div class="terminal-line"><span>PONG (0.24 ms)</span></div>
+              <div class="term-line"><span>// Connected to localhost:6379</span></div>
+              <div class="term-line ok"><span>> PING</span></div>
+              <div class="term-line"><span>PONG (0.22 ms)</span></div>
             </div>
-            <form class="terminal-input-row" onsubmit="handleTerminalSubmit(event)">
-              <span class="terminal-prompt">&gt;</span>
-              <input type="text" id="termInput" class="terminal-input" placeholder="SET name Anshul | GET name | PING | DEL name" autocomplete="off"/>
-              <button type="submit" class="terminal-run-btn">Execute</button>
+            <form class="term-form" onsubmit="runCmd(event)">
+              <span class="term-prompt">miniredis&gt;</span>
+              <input type="text" id="termInput" class="term-input" placeholder="SET key val | GET key | PING | DEL key" autocomplete="off"/>
+              <button type="submit" class="term-btn">Send</button>
             </form>
-          </div>
-          <div style="margin-top:4px;">
-            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px;">Live ConcurrentHashMap Store State:</div>
-            <table class="kv-table" id="kvTable">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.725rem; color:var(--text-subtle); margin-top:4px;">
+              Live ConcurrentHashMap Inspector:
+            </div>
+            <table class="table-inspector">
               <thead><tr><th>Key</th><th>Value</th><th>Latency</th></tr></thead>
-              <tbody id="kvTableBody"></tbody>
+              <tbody id="tableBody"></tbody>
             </table>
           </div>
         `;
-        refreshKVTable();
+        refreshTable();
       } else if (type === 'benchmark') {
-        rightEl.innerHTML = `
+        el.innerHTML = `
           <div class="widget-header">
-            <span>📊 Sub-Millisecond Benchmark Receipt</span>
-            <span class="widget-badge" style="background:rgba(0,212,255,0.15); color:#00d4ff;">10,000 Req</span>
+            <span>Performance Receipt</span>
+            <span class="widget-tag" style="color:var(--emerald);">10,000 Req</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:14px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <div class="stat-card">
-                <div class="stat-val">94,600</div>
-                <div class="stat-label">Operations / Sec</div>
+          <div class="widget-content">
+            <div class="metric-grid">
+              <div class="metric-card">
+                <div class="metric-value">94,600</div>
+                <div class="metric-label">Operations / sec</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-val" style="color:#10b981;">0.55 ms</div>
-                <div class="stat-label">Mean Latency</div>
+              <div class="metric-card">
+                <div class="metric-value" style="color:var(--emerald);">0.55 ms</div>
+                <div class="metric-label">Mean Latency</div>
               </div>
             </div>
-            <div style="background:#080c14; border:1px solid #1e293b; border-radius:10px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.78rem; display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--border-subtle); padding-top:10px;">
               <div style="display:flex; justify-content:space-between;">
-                <span style="color:#94a3b8;">P90 Latency (90th percentile)</span>
-                <strong style="color:#00d4ff;">1.45 ms</strong>
+                <span style="color:var(--text-muted);">P90 Percentile</span>
+                <strong style="color:#fff;">1.45 ms</strong>
               </div>
               <div style="display:flex; justify-content:space-between;">
-                <span style="color:#94a3b8;">P99 Latency (99th percentile)</span>
-                <strong style="color:#10b981;">3.22 ms</strong>
+                <span style="color:var(--text-muted);">P99 Percentile</span>
+                <strong style="color:#fff;">3.22 ms</strong>
               </div>
               <div style="display:flex; justify-content:space-between;">
-                <span style="color:#94a3b8;">Concurrent Threads</span>
-                <strong style="color:#ff6b35;">500 Workers</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; border-top:1px dashed #1e293b; padding-top:6px;">
-                <span style="color:#94a3b8;">Data Consistency Error Rate</span>
-                <strong style="color:#10b981;">0.00% (100% Safe)</strong>
+                <span style="color:var(--text-muted);">Concurrent Sockets</span>
+                <strong style="color:#fff;">500 Active</strong>
               </div>
             </div>
           </div>
@@ -996,165 +1037,136 @@
       }
     }
 
-    // Act I: Handshake Animation
-    function simulateHandshake() {
-      const p1 = document.getElementById('tcpStep1');
-      const p2 = document.getElementById('tcpStep2');
-      const p3 = document.getElementById('tcpStep3');
+    function traceHandshake() {
+      const p1 = document.getElementById('p1');
+      const p2 = document.getElementById('p2');
+      const p3 = document.getElementById('p3');
       p1.style.opacity = '0.3'; p2.style.opacity = '0.3'; p3.style.opacity = '0.3';
-
-      setTimeout(() => { p1.style.opacity = '1'; p1.style.transform = 'scale(1.02)'; }, 100);
-      setTimeout(() => { p2.style.opacity = '1'; p2.style.transform = 'scale(1.02)'; }, 400);
-      setTimeout(() => { 
-        p3.style.opacity = '1'; p3.style.transform = 'scale(1.02)'; 
-        document.getElementById('simStatusText').innerText = "Status: TCP 3-Way Handshake Complete (0.35ms total)";
-      }, 700);
-      setTimeout(() => {
-        p1.style.transform = 'none'; p2.style.transform = 'none'; p3.style.transform = 'none';
-      }, 1200);
+      setTimeout(() => { p1.style.opacity = '1'; }, 120);
+      setTimeout(() => { p2.style.opacity = '1'; }, 350);
+      setTimeout(() => { p3.style.opacity = '1'; }, 600);
     }
 
-    // Act II: Concurrency Slider
-    function updateConcurrency(val) {
-      concurrentClients = parseInt(val, 10);
-      document.getElementById('sliderValDisplay').innerText = `${concurrentClients} connections`;
-      document.getElementById('sliderBadge').innerText = `${concurrentClients} Clients`;
-      document.getElementById('workerCount').innerText = concurrentClients;
-      document.getElementById('simStatusText').innerText = `Status: CachedThreadPool managing ${concurrentClients} active socket threads`;
+    function updateClients(val) {
+      activeClients = parseInt(val, 10);
+      document.getElementById('workersDisplay').innerText = activeClients;
+      document.getElementById('sliderValDisplay').innerText = activeClients;
+      document.getElementById('clientBadge').innerText = `${activeClients} Sockets`;
     }
 
-    // Act III: Protocol Router Demo
-    function testRoute(type) {
-      const out = document.getElementById('routeOutput');
+    function showRoute(type) {
+      const out = document.getElementById('routerOutput');
+      document.getElementById('btnHttp').classList.toggle('active', type === 'http');
+      document.getElementById('btnRedis').classList.toggle('active', type === 'redis');
+
       if (type === 'http') {
         out.innerHTML = `
-          <div style="color:#ff6b35;">> GET / HTTP/1.1 (Host: miniredis.onrender.com)</div>
-          <div style="color:#00d4ff;">[Protocol Router] Detected 'HTTP' signature...</div>
-          <div style="color:#94a3b8;">[Header Drainer] Draining browser HTTP headers...</div>
-          <div style="color:#10b981;">[HTTP Response] Served Storybook HTML (HTTP 200 OK)</div>
+          <div class="hl-cmd">> GET / HTTP/1.1 (Host: localhost:6379)</div>
+          <div class="hl-info">// First byte signature matches 'HTTP'</div>
+          <div>// Draining browser HTTP request headers...</div>
+          <div class="hl-res">HTTP/1.1 200 OK • Serving Storybook HTML</div>
         `;
       } else {
         out.innerHTML = `
-          <div style="color:#ff6b35;">> SET user:1001 "Anshul Kumar"\\r\\n</div>
-          <div style="color:#00d4ff;">[Protocol Router] Detected Redis Command Signature...</div>
-          <div style="color:#94a3b8;">[ConcurrentHashMap] Atomic put("user:1001", "Anshul Kumar")</div>
-          <div style="color:#10b981;">[TCP Stream Output] "OK" (0.42 ms)</div>
+          <div class="hl-cmd">> SET user:1001 "Anshul Kumar"\\r\\n</div>
+          <div class="hl-info">// First byte matches Redis TCP protocol</div>
+          <div>// Routing to ConcurrentHashMap data store...</div>
+          <div class="hl-res">OK (0.38 ms)</div>
         `;
       }
     }
 
-    // Act IV: Interactive Terminal Console
-    function handleTerminalSubmit(e) {
+    function runCmd(e) {
       e.preventDefault();
-      const inputEl = document.getElementById('termInput');
-      const cmd = inputEl.value.trim();
+      const input = document.getElementById('termInput');
+      const cmd = input.value.trim();
       if (!cmd) return;
-      inputEl.value = '';
+      input.value = '';
 
-      const termOut = document.getElementById('termOutput');
-      const cmdLine = document.createElement('div');
-      cmdLine.className = 'terminal-line';
-      cmdLine.innerHTML = `<span style="color:#fff;">> ${cmd}</span>`;
-      termOut.appendChild(cmdLine);
+      const term = document.getElementById('termOutput');
+      const line = document.createElement('div');
+      line.className = 'term-line';
+      line.innerHTML = `<span>> ${cmd}</span>`;
+      term.appendChild(line);
 
       const parts = cmd.split(' ');
       const action = parts[0].toUpperCase();
-
       let resText = '';
-      let resClass = 'terminal-line success';
-      const start = performance.now();
+      let okClass = 'term-line ok';
 
       if (action === 'SET' && parts.length >= 3) {
         const key = parts[1];
         const val = parts.slice(2).join(' ').replace(/^["']|["']$/g, '');
-        localStore[key] = val;
+        kvStore[key] = val;
         resText = `OK (${(Math.random()*0.3 + 0.2).toFixed(2)} ms)`;
-        refreshKVTable();
+        refreshTable();
       } else if (action === 'GET' && parts.length >= 2) {
-        const key = parts[1];
-        const val = localStore[key] || '(nil)';
+        const val = kvStore[parts[1]] || '(nil)';
         resText = `"${val}" (${(Math.random()*0.3 + 0.2).toFixed(2)} ms)`;
       } else if (action === 'DEL' && parts.length >= 2) {
-        const key = parts[1];
-        delete localStore[key];
+        delete kvStore[parts[1]];
         resText = `(integer) 1 (${(Math.random()*0.3 + 0.2).toFixed(2)} ms)`;
-        refreshKVTable();
+        refreshTable();
       } else if (action === 'PING') {
         resText = `PONG (${(Math.random()*0.2 + 0.15).toFixed(2)} ms)`;
-      } else if (action === 'BENCHMARK') {
-        resText = `94,620 ops/sec (100% concurrent safety verified)`;
       } else {
-        resText = `ERROR: Unknown Command '${action}'. Try: SET key val, GET key, PING, DEL key`;
-        resClass = 'terminal-line err';
+        resText = `ERR unknown command '${action}'`;
+        okClass = 'term-line err';
       }
 
-      const resLine = document.createElement('div');
-      resLine.className = resClass;
-      resLine.innerHTML = `<span>${resText}</span>`;
-      termOut.appendChild(resLine);
-      termOut.scrollTop = termOut.scrollHeight;
+      const res = document.createElement('div');
+      res.className = okClass;
+      res.innerHTML = `<span>${resText}</span>`;
+      term.appendChild(res);
+      term.scrollTop = term.scrollHeight;
     }
 
-    function refreshKVTable() {
-      const tbody = document.getElementById('kvTableBody');
+    function refreshTable() {
+      const tbody = document.getElementById('tableBody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      Object.entries(localStore).forEach(([k, v]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td style="color:#00d4ff; font-weight:600;">${k}</td>
+      Object.entries(kvStore).forEach(([k, v]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:#fff; font-weight:500;">${k}</td>
           <td>"${v}"</td>
-          <td style="color:#10b981;">0.45 ms</td>
+          <td style="color:var(--emerald);">0.42 ms</td>
         `;
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
       });
     }
 
-    // Navigation & Simulation Controls
-    function setChapter(idx) {
-      if (simInterval) clearInterval(simInterval);
-      renderChapter(idx);
-    }
+    function startWalkthrough() {
+      if (autoInterval) clearInterval(autoInterval);
+      let i = 0;
+      setStep(i);
+      document.getElementById('btnPlay').innerText = "⏳ Playing Step 01 to 05...";
 
-    function nextChapter() {
-      if (currentChapter < chaptersData.length - 1) {
-        setChapter(currentChapter + 1);
-      }
-    }
-
-    function prevChapter() {
-      if (currentChapter > 0) {
-        setChapter(currentChapter - 1);
-      }
-    }
-
-    function startFullSimulation() {
-      if (simInterval) clearInterval(simInterval);
-      let step = 0;
-      setChapter(step);
-      document.getElementById('simPlayBtn').innerText = "⏳ Simulating Act I to V...";
-      document.getElementById('simStatusText').innerText = "Status: Real-time simulation in progress across 5 architectural stages...";
-
-      simInterval = setInterval(() => {
-        step++;
-        if (step >= chaptersData.length) {
-          clearInterval(simInterval);
-          document.getElementById('simPlayBtn').innerText = "▶ Watch Real-Time Request Journey";
-          document.getElementById('simStatusText').innerText = "Status: Server Listening on Port 6379 • 0% Lock Contention";
+      autoInterval = setInterval(() => {
+        i++;
+        if (i >= stepsData.length) {
+          clearInterval(autoInterval);
+          document.getElementById('btnPlay').innerText = "▶ Walkthrough";
           return;
         }
-        renderChapter(step);
-      }, 2200);
+        setStep(i);
+      }, 2500);
     }
 
-    // Keyboard navigation
+    function nextStep() {
+      if (currentStep < stepsData.length - 1) setStep(currentStep + 1);
+    }
+
+    function prevStep() {
+      if (currentStep > 0) setStep(currentStep - 1);
+    }
+
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight') nextChapter();
-      if (e.key === 'ArrowLeft') prevChapter();
+      if (e.key === 'ArrowRight') nextStep();
+      if (e.key === 'ArrowLeft') prevStep();
     });
 
-    // Initialize Act I on load
-    renderChapter(0);
+    setStep(0);
   </script>
 </body>
 </html>
