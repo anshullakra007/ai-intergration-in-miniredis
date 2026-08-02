@@ -51,11 +51,12 @@ public class Main {
                 }
 
                 // 2. SEND VALID RESPONSE
-                String html = "<html><body><h1>&#9889; MiniRedis is Live!</h1><p>The TCP Server is running.</p></body></html>";
+                String html = getLandingPageHtml();
+                byte[] htmlBytes = html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
                 
                 out.println("HTTP/1.1 200 OK");
-                out.println("Content-Type: text/html");
-                out.println("Content-Length: " + html.length());
+                out.println("Content-Type: text/html; charset=utf-8");
+                out.println("Content-Length: " + htmlBytes.length);
                 out.println("Connection: close");
                 out.println(); // Mandatory blank line
                 out.println(html);
@@ -96,5 +97,23 @@ public class Main {
         else {
             out.println("ERROR: Unknown Command");
         }
+    }
+
+    private static String getLandingPageHtml() {
+        try {
+            File file = new File("index.html");
+            if (file.exists()) {
+                byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+                return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+            }
+            try (InputStream is = Main.class.getResourceAsStream("/index.html")) {
+                if (is != null) {
+                    return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading index.html: " + e.getMessage());
+        }
+        return "<html><body><h1>&#9889; MiniRedis is Live!</h1><p>The TCP Server is running.</p></body></html>";
     }
 }
