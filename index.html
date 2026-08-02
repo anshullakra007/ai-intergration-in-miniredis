@@ -402,7 +402,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      overflow: hidden;
+      overflow: visible;
       display: flex;
       flex-direction: column;
     }
@@ -721,15 +721,15 @@
           <span class="step-index">02</span>
           <span>Thread Pool</span>
         </button>
-        <button class="step-tab" onclick="setStep(3)">
+        <button class="step-tab" onclick="setStep(2)">
           <span class="step-index">03</span>
           <span>Protocol Router</span>
         </button>
-        <button class="step-tab" onclick="setStep(4)">
+        <button class="step-tab" onclick="setStep(3)">
           <span class="step-index">04</span>
           <span>Lock-Free Store</span>
         </button>
-        <button class="step-tab" onclick="setStep(5)">
+        <button class="step-tab" onclick="setStep(4)">
           <span class="step-index">05</span>
           <span>Benchmarks</span>
         </button>
@@ -980,24 +980,29 @@
             <span>MiniRedis TCP Terminal</span>
             <span class="widget-tag">in-memory store</span>
           </div>
-          <div class="widget-content">
-            <div class="terminal-output" id="termOutput">
-              <div class="term-line"><span>// Connected to localhost:6379</span></div>
-              <div class="term-line ok"><span>> PING</span></div>
-              <div class="term-line"><span>PONG (0.22 ms)</span></div>
+          <div class="widget-content" style="gap: 14px;">
+            <div style="background: #08090d; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div class="terminal-output" id="termOutput" style="min-height: 75px; max-height: 100px;">
+                <div class="term-line"><span>// Connected to localhost:6379</span></div>
+                <div class="term-line ok"><span>> PING</span></div>
+                <div class="term-line"><span>PONG (0.22 ms)</span></div>
+              </div>
+              <form class="term-form" onsubmit="runCmd(event)" style="padding-top: 8px;">
+                <span class="term-prompt">miniredis&gt;</span>
+                <input type="text" id="termInput" class="term-input" placeholder="SET key val | GET key | PING | DEL key" autocomplete="off"/>
+                <button type="submit" class="term-btn">Send</button>
+              </form>
             </div>
-            <form class="term-form" onsubmit="runCmd(event)">
-              <span class="term-prompt">miniredis&gt;</span>
-              <input type="text" id="termInput" class="term-input" placeholder="SET key val | GET key | PING | DEL key" autocomplete="off"/>
-              <button type="submit" class="term-btn">Send</button>
-            </form>
-            <div style="font-family:'JetBrains Mono',monospace; font-size:0.725rem; color:var(--text-subtle); margin-top:4px;">
-              Live ConcurrentHashMap Inspector:
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; font-family:'JetBrains Mono',monospace; font-size:0.725rem; color:var(--text-muted); border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                <span>Live ConcurrentHashMap Store</span>
+                <span id="storeCountBadge" style="color: var(--emerald); font-weight: 600;">3 keys</span>
+              </div>
+              <table class="table-inspector" style="margin-top: 0;">
+                <thead><tr><th>Key</th><th>Value</th><th>Latency</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+              </table>
             </div>
-            <table class="table-inspector">
-              <thead><tr><th>Key</th><th>Value</th><th>Latency</th></tr></thead>
-              <tbody id="tableBody"></tbody>
-            </table>
           </div>
         `;
         refreshTable();
@@ -1134,6 +1139,10 @@
         `;
         tbody.appendChild(tr);
       });
+      const countBadge = document.getElementById('storeCountBadge');
+      if (countBadge) {
+        countBadge.innerText = `${Object.keys(kvStore).length} keys`;
+      }
     }
 
     function startWalkthrough() {
