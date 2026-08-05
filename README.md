@@ -1,4 +1,4 @@
-# ⚡ MiniRedis - Multi-Threaded In-Memory Key-Value TCP Store
+# ⚡ MiniRedis (In-Memory Key-Value Store)
 
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
