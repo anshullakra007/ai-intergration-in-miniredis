@@ -12,6 +12,12 @@
 
 ---
 
+## 🎯 Problem Statement
+
+Standard Redis is a phenomenal tool, but its single-threaded event loop architecture can become a bottleneck in specific heavily multi-core environments, and its codebase is massive. The objective of this project was to engineer a lightweight, bare-metal alternative using Java raw sockets that leverages a multi-threaded `ConcurrentHashMap` architecture. This design proves that for certain key-value workloads, stripping away the overhead of a full database engine and utilizing modern Java concurrent structures can yield extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
+
+---
+
 ## 🏗️ System Architecture & Threading Model
 
 ```mermaid
