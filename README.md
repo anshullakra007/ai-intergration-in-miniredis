@@ -1,4 +1,4 @@
-#  MiniRedis (In-Memory Key-Value Store)
+# MiniRedis (In-Memory Key-Value Store)
 
 ## Why I built this ?
 
@@ -23,13 +23,13 @@ MiniRedis is a lightweight, high-performance in-memory key-value storage engine 
 
 ---
 
-##  Problem Statement
+## Problem Statement
 
 Standard Redis is a phenomenal tool, but its single-threaded event loop architecture can become a bottleneck in specific heavily multi-core environments, and its codebase is massive. The objective of this project was to engineer a lightweight, bare-metal alternative using Java raw sockets that leverages a multi-threaded `ConcurrentHashMap` architecture. This design proves that for certain key-value workloads, stripping away the overhead of a full database engine and utilizing modern Java concurrent structures can yield extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
 
 ---
 
-## ️ System Architecture & Threading Model
+## System Architecture & Threading Model
 
 ```mermaid
 flowchart TB
@@ -77,7 +77,7 @@ flowchart TB
 
 ---
 
-##  Quickstart (30 Seconds with Docker)
+## Quickstart (30 Seconds with Docker)
 
 Spin up the complete MiniRedis TCP server instantly using Docker Compose:
 
@@ -99,7 +99,7 @@ Anshul Kumar
 
 ---
 
-##  Performance Benchmarks & Stress Testing
+## Performance Benchmarks & Stress Testing
 
 MiniRedis was rigorously load-tested against concurrent client workloads to measure throughput, latency distribution, and thread-safety under heavy lock contention.
 
@@ -133,7 +133,7 @@ print(f'Completed 5,000 concurrent socket operations in {time.time()-start:.2f}s
 
 ---
 
-## ️ Tech Stack & Supported Commands
+## Tech Stack & Supported Commands
 
 * Language: Java 21 (Core JDK)
 * Networking: `java.net.ServerSocket`, `java.net.Socket` (Raw TCP/IP Sockets)
@@ -148,7 +148,7 @@ print(f'Completed 5,000 concurrent socket operations in {time.time()-start:.2f}s
 
 ---
 
-##  Native Local Execution (Without Docker)
+## Native Local Execution (Without Docker)
 
 ```bash
 # Compile Java source files
