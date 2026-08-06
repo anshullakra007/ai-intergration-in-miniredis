@@ -1,4 +1,4 @@
-# ⚡ MR (I-My Ky-Vlu S)
+#  MR (I-My Ky-Vlu S)
 
 ![Jv](://.l./b/Jv-21-)
 ![Dk](://.l./b/Dk-bl-blu)
@@ -7,18 +7,18 @@
 
 **MR** lw, -f -y ky-vlu f u **Rw Jv Sk** wu y l fwk. I R v bl by l -uy l v u -b TC l, v **ub-ll l** **94,600+ /** uu.
 
-🚀 **Lv Sv A:** [://..](://..) *(C v TC Cl / N Bw)* 
-📖 **Iv Sybk L :** V [://..](://..) yu bw v 5-A l- wlku, TC Hk ul, Cuy l, lv I-Bw MR Tl!
+ **Lv Sv A:** [://..](://..) *(C v TC Cl / N Bw)* 
+ **Iv Sybk L :** V [://..](://..) yu bw v 5-A l- wlku, TC Hk ul, Cuy l, lv I-Bw MR Tl!
 
 ---
 
-## 🎯 bl S
+##  bl S
 
 S R l l, bu l- v l u b blk f vly ul- v, b v. T bv f w lw, b-l lv u Jv w k lv ul- `CuHM` u. T v f ky-vlu wkl, wy v f full b ulz Jv u uu yl uu (94,600+ /) w ub-ll ly.
 
 ---
 
-## 🏗️ Sy Au & T Ml
+## ️ Sy Au & T Ml
 
 ```
 flw TB
@@ -66,7 +66,7 @@ flw TB
 
 ---
 
-## ⚡ Quk (30 S w Dk)
+##  Quk (30 S w Dk)
 
 S u l MR TC v ly u Dk C:
 
@@ -88,7 +88,7 @@ Aul Ku
 
 ---
 
-## 📊 f Bk & S T
+##  f Bk & S T
 
 MR w uly l- u l wkl u uu, ly bu, -fy u vy lk .
 
@@ -122,7 +122,7 @@ w u.fuu.Tlu(wk=500) :
 
 ---
 
-## 🛠️ T Sk & Su C
+## ️ T Sk & Su C
 
 * **Lu:** Jv 21 (C JDK)
 * **Nwk:** `v..SvSk`, `v..Sk` (Rw TC/I Sk)
@@ -137,7 +137,7 @@ w u.fuu.Tlu(wk=500) :
 
 ---
 
-## 💻 Nv Ll u (Wu Dk)
+##  Nv Ll u (Wu Dk)
 
 ```b
 # Cl Jv u fl
