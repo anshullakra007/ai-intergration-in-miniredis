@@ -1,157 +1,157 @@
-# ⚡ MiniRedis (In-Memory Key-Value Store)
+# ⚡ MR (I-My Ky-Vlu S)
 
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
-![Concurrency](https://img.shields.io/badge/Feature-Multi__Threaded-purple)
-![Live](https://img.shields.io/badge/Status-Live__Deployed-success)
+![Jv](://.l./b/Jv-21-)
+![Dk](://.l./b/Dk-bl-blu)
+![Cuy](://.l./b/Fu-MulT-ul)
+![Lv](://.l./b/Su-LvDly-u)
 
-**MiniRedis** is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using **Raw Java Sockets** without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving **sub-millisecond latencies** and **94,600+ ops/sec** throughput.
+**MR** lw, -f -y ky-vlu f u **Rw Jv Sk** wu y l fwk. I R v bl by l -uy l v u -b TC l, v **ub-ll l** **94,600+ /** uu.
 
-🚀 **Live Server Address:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
-📖 **Interactive Storybook Landing Page:** Visit [https://miniredis.onrender.com](https://miniredis.onrender.com) in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
-
----
-
-## 🎯 Problem Statement
-
-Standard Redis is a phenomenal tool, but its single-threaded event loop architecture can become a bottleneck in specific heavily multi-core environments, and its codebase is massive. The objective of this project was to engineer a lightweight, bare-metal alternative using Java raw sockets that leverages a multi-threaded `ConcurrentHashMap` architecture. This design proves that for certain key-value workloads, stripping away the overhead of a full database engine and utilizing modern Java concurrent structures can yield extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
+🚀 **Lv Sv A:** [://..](://..) *(C v TC Cl / N Bw)* 
+📖 **Iv Sybk L :** V [://..](://..) yu bw v 5-A l- wlku, TC Hk ul, Cuy l, lv I-Bw MR Tl!
 
 ---
 
-## 🏗️ System Architecture & Threading Model
+## 🎯 bl S
 
-```mermaid
-flowchart TB
-    subgraph Clients ["Client Layer"]
-        TCP_Client["TCP Client (Netcat / CLI)"]
-        HTTP_Client["HTTP Client (Browser / Load Balancer)"]
-    end
+S R l l, bu l- v l u b blk f vly ul- v, b v. T bv f w lw, b-l lv u Jv w k lv ul- `CuHM` u. T v f ky-vlu wkl, wy v f full b ulz Jv u uu yl uu (94,600+ /) w ub-ll ly.
 
-    subgraph Network ["Kernel Socket Layer"]
-        Server["ServerSocket (:6379 / $PORT)"]
-        Pool["ExecutorService (CachedThreadPool)"]
-        Handler["handleClient (Dedicated Worker Thread)"]
-    end
+---
 
-    subgraph Router ["Protocol Detection & Routing"]
-        Check{"Is HTTP Request?"}
-        HTTP_Res["Serve Interactive Storybook (index.html)"]
-        Redis_Cmd["processCommand (SET / GET / DEL / PING)"]
-    end
+## 🏗️ Sy Au & T Ml
 
-    subgraph Storage ["Thread-Safe In-Memory Core"]
-        Store[("ConcurrentHashMap (Lock-Stripped Store)")]
-    end
+```
+flw TB
+ ub Cl ["Cl Ly"]
+ TCCl["TC Cl (N / CLI)"]
+ HTTCl["HTT Cl (Bw / L Bl)"]
+ 
 
-    TCP_Client -->|"Raw TCP Stream"| Server
-    HTTP_Client -->|"HTTP GET / Health Check"| Server
+ ub Nwk ["Kl Sk Ly"]
+ Sv["SvSk (:6379 / $ORT)"]
+ l["uSv (CTl)"]
+ Hl["lCl (D Wk T)"]
+ 
 
-    Server -->|"ServerSocket.accept()"| Pool
-    Pool -->|"Spawn Worker"| Handler
-    Handler -->|"First Line Parse"| Check
+ ub Ru ["l D & Ru"]
+ Ck"I HTT Rqu?"
+ HTTR["Sv Iv Sybk (.l)"]
+ RC["C (ST / GT / DL / ING)"]
+ 
 
-    Check -->|"Yes (HTTP Signature)"| HTTP_Res
-    Check -->|"No (Redis Protocol)"| Redis_Cmd
+ ub S ["T-Sf I-My C"]
+ S[("CuHM (Lk-S S)")]
+ 
 
-    Redis_Cmd <-->|"Atomic CAS / O(1) Access"| Store
+ TCCl -->|"Rw TC S"| Sv
+ HTTCl -->|"HTT GT / Hl Ck"| Sv
 
-    HTTP_Res -->|"HTTP 200 OK (HTML)"| HTTP_Client
-    Redis_Cmd -->|"Redis Response (+OK / $val)"| TCP_Client
+ Sv -->|"SvSk.()"| l
+ l -->|"Sw Wk"| Hl
+ Hl -->|"F L "| Ck
+
+ Ck -->|"Y (HTT Su)"| HTTR
+ Ck -->|"N (R l)"| RC
+
+ RC <-->|"A CAS / O(1) A"| S
+
+ HTTR -->|"HTT 200 OK (HTML)"| HTTCl
+ RC -->|"R R (+OK / $vl)"| TCCl
 ```
 
-### Key Architectural Highlights
-1. **Non-Blocking TCP Listener:** A centralized `ServerSocket` listens on port `6379` and immediately offloads connection handling to an `ExecutorService`.
-2. **Thread-Per-Client Concurrency:** Each connected TCP client is serviced by a dedicated worker thread from a cached thread pool, eliminating I/O bottlenecks and ensuring isolated socket streams.
-3. **Thread-Safe Memory Core:** All key-value storage operations occur against an underlying `ConcurrentHashMap`, leveraging lock stripping and atomic bucket-level operations to prevent lock contention even under 500+ concurrent connections.
+### Ky Aul Hl
+1. **N-Blk TC L:** A lz `SvSk` l `6379` ly ffl l `uSv`.
+2. **T--Cl Cuy:** TC l v by wk f l, l I/O blk u l k .
+3. **T-Sf My C:** All ky-vlu u uly `CuHM`, lv lk buk-lvl v lk v u 500+ u .
 
 ---
 
-## ⚡ Quickstart (30 Seconds with Docker)
+## ⚡ Quk (30 S w Dk)
 
-Spin up the complete MiniRedis TCP server instantly using Docker Compose:
+S u l MR TC v ly u Dk C:
 
-```bash
-# Clone the repository and start MiniRedis in detached mode
-docker-compose up -d --build
+```b
+# Cl y MR 
+k- u - --bul
 ```
 
-The server will be live and listening on **TCP Port `6379`**.
+T v wll b lv l **TC `6379`**.
 
-### Test with Netcat (`nc`)
-```bash
-nc localhost 6379
-> SET user:1001 "Anshul Kumar"
+### T w N (``)
+```b
+ ll 6379
+> ST u:1001 "Aul Ku"
 OK
-> GET user:1001
-Anshul Kumar
+> GT u:1001
+Aul Ku
 ```
 
 ---
 
-## 📊 Performance Benchmarks & Stress Testing
+## 📊 f Bk & S T
 
-MiniRedis was rigorously load-tested against concurrent client workloads to measure throughput, latency distribution, and thread-safety under heavy lock contention.
+MR w uly l- u l wkl u uu, ly bu, -fy u vy lk .
 
-| Metric | Result | Benchmark Conditions |
+| M | Rul | Bk C |
 | :--- | :--- | :--- |
-| **Peak Throughput** | **94,600+ ops/sec** | 100% in-memory SET/GET operations |
-| **Concurrent Clients** | **500 connections** | Simultaneous active socket connections |
-| **Mean Latency** | **0.55 ms** | Sub-millisecond response across all commands |
-| **P90 / P99 Latency** | **1.45 ms / 3.22 ms** | Low tail latency with minimal context-switch overhead |
-| **Data Consistency** | **100% (0% error rate)** | Zero race conditions under high lock contention |
+| **k Tuu** | **94,600+ /** | 100% -y ST/GT |
+| **Cu Cl** | **500 ** | Sulu v k |
+| **M Ly** | **0.55 ** | Sub-ll ll |
+| **90 / 99 Ly** | **1.45 / 3.22 ** | Lw l ly w l -w v |
+| **D Cy** | **100% (0% )** | Z u lk |
 
-### Running Benchmarks
-You can stress-test the local instance using standard socket load testing tools or our benchmark script:
-```bash
-# Example test using 500 concurrent connections over 10,000 requests
-python3 -c "
-import socket, time, concurrent.futures
-def send_req(i):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('localhost', 6379))
-    s.sendall(f'SET k{i} v{i}\r\n'.encode())
-    s.recv(1024)
-    s.close()
+### Ru Bk
+Yu - ll u k l l u bk :
+```b
+# l u 500 u v 10,000 qu
+y3 - "
+ k, , u.fuu
+f q():
+ = k.k(k.AFINT, k.SOCKSTRAM)
+ .(('ll', 6379))
+ .ll(f'ST k v'.())
+ .v(1024)
+ .l()
 
-start = time.time()
-with concurrent.futures.ThreadPoolExecutor(max_workers=500) as ex:
-    ex.map(send_req, range(5000))
-print(f'Completed 5,000 concurrent socket operations in {time.time()-start:.2f}s')
+ = .()
+w u.fuu.Tlu(wk=500) :
+ .(q, (5000))
+(f'Cl 5,000 u k .()-:.2f')
 "
 ```
 
 ---
 
-## 🛠️ Tech Stack & Supported Commands
+## 🛠️ T Sk & Su C
 
-* **Language:** Java 21 (Core JDK)
-* **Networking:** `java.net.ServerSocket`, `java.net.Socket` (Raw TCP/IP Sockets)
-* **Concurrency:** `java.util.concurrent.ExecutorService`, `ConcurrentHashMap`
-* **Containerization:** Docker, Docker Compose
+* **Lu:** Jv 21 (C JDK)
+* **Nwk:** `v..SvSk`, `v..Sk` (Rw TC/I Sk)
+* **Cuy:** `v.ul.u.uSv`, `CuHM`
+* **Cz:** Dk, Dk C
 
-### Custom Protocol Commands
-* `SET <key> <value>` — Stores a string value associated with the specified key.
-* `GET <key>` — Retrieves the stored string value for the key.
-* `DEL <key>` — Deletes the specified key from memory.
-* `PING` — Returns `PONG` to verify server health and connection liveness.
+### Cu l C
+* `ST <ky> <vlu>` — S vlu w f ky.
+* `GT <ky>` — Rv vlu f ky.
+* `DL <ky>` — Dl f ky f y.
+* `ING` — Ru `ONG` vfy v l lv.
 
 ---
 
-## 💻 Native Local Execution (Without Docker)
+## 💻 Nv Ll u (Wu Dk)
 
-```bash
-# Compile Java source files
-javac Main.java
+```b
+# Cl Jv u fl
+v M.v
 
-# Start server natively on port 6379
-java Main
+# S v vly 6379
+v M
 ```
 
 ---
 
-## Why I built this ?
+## Wy I bul ?
 
-**Situation:** Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
-**Task:** My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
-**Action:** I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
-**Result:** The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
+**Su:** U l f -f, -y qu v by -lvl AI kl w TC k y .
+**Tk:** My l w bul u, lw l f R f , bl f l u l R (GT, ST, DL).
+**A:** I l u TC v w RS (R Slz l). I -f, u f uly ky-vlu l v l u ffly ull k .
+**Rul:** T ul `MR` v ufully w `-l` l, v -uu u w wl u f wk uy.
