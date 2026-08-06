@@ -151,14 +151,7 @@ java Main
 
 ## Why I built this ?
 
-**Situation:** 
-While building modern software applications, developing structured and scalable solutions is critical. The requirement was to build and maintain `MiniRedis` to address specific technical challenges and provide a robust implementation.
-
-**Task:** 
-My goal was to engineer a reliable and efficient solution for `MiniRedis`, ensuring clean architecture, maintainability, and alignment with project objectives (Custom Key-Value Store).
-
-**Action:** 
-I designed and implemented the core logic and project architecture, focusing on best practices in code organization and system design. I systematically tackled the problem by breaking down the requirements, writing modular code, and integrating necessary dependencies to bring the repository to life.
-
-**Result:** 
-The project successfully fulfilled its core requirements, serving as a functional codebase. It demonstrates a clear understanding of software engineering principles and provides a solid foundation for future scaling and feature additions.
+**Situation:** Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
+**Task:** My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
+**Action:** I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
+**Result:** The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
