@@ -1,9 +1,7 @@
 #  MiniRedis (In-Memory Key-Value Store)
 
-**MiniRedis** is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using **Raw Java Sockets** without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving **sub-millisecond latencies** and **94,600+ ops/sec** throughput.
-
- **Live Server Address:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
- **Interactive Storybook Landing Page:** Visit [https://miniredis.onrender.com](https://miniredis.onrender.com) in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
+**MiniRedis**is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using**Raw Java Sockets**without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving**sub-millisecond latencies**and**94,600+ ops/sec**throughput.**Live Server Address:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
+ **Interactive Storybook Landing Page:**Visit [https://miniredis.onrender.com](https://miniredis.onrender.com) in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
 
 ---
 
@@ -55,9 +53,9 @@ flowchart TB
 ```
 
 ### Key Architectural Highlights
-1. **Non-Blocking TCP Listener:** A centralized `ServerSocket` listens on port `6379` and immediately offloads connection handling to an `ExecutorService`.
-2. **Thread-Per-Client Concurrency:** Each connected TCP client is serviced by a dedicated worker thread from a cached thread pool, eliminating I/O bottlenecks and ensuring isolated socket streams.
-3. **Thread-Safe Memory Core:** All key-value storage operations occur against an underlying `ConcurrentHashMap`, leveraging lock stripping and atomic bucket-level operations to prevent lock contention even under 500+ concurrent connections.
+1.**Non-Blocking TCP Listener:**A centralized `ServerSocket` listens on port `6379` and immediately offloads connection handling to an `ExecutorService`.
+2.**Thread-Per-Client Concurrency:**Each connected TCP client is serviced by a dedicated worker thread from a cached thread pool, eliminating I/O bottlenecks and ensuring isolated socket streams.
+3.**Thread-Safe Memory Core:**All key-value storage operations occur against an underlying `ConcurrentHashMap`, leveraging lock stripping and atomic bucket-level operations to prevent lock contention even under 500+ concurrent connections.
 
 ---
 
@@ -70,7 +68,7 @@ Spin up the complete MiniRedis TCP server instantly using Docker Compose:
 docker-compose up -d --build
 ```
 
-The server will be live and listening on **TCP Port `6379`**.
+The server will be live and listening on**TCP Port `6379`**.
 
 ### Test with Netcat (`nc`)
 ```bash
@@ -89,11 +87,11 @@ MiniRedis was rigorously load-tested against concurrent client workloads to meas
 
 | Metric | Result | Benchmark Conditions |
 | :--- | :--- | :--- |
-| **Peak Throughput** | **94,600+ ops/sec** | 100% in-memory SET/GET operations |
-| **Concurrent Clients** | **500 connections** | Simultaneous active socket connections |
-| **Mean Latency** | **0.55 ms** | Sub-millisecond response across all commands |
-| **P90 / P99 Latency** | **1.45 ms / 3.22 ms** | Low tail latency with minimal context-switch overhead |
-| **Data Consistency** | **100% (0% error rate)** | Zero race conditions under high lock contention |
+| **Peak Throughput**|**94,600+ ops/sec**| 100% in-memory SET/GET operations |
+|**Concurrent Clients**|**500 connections**| Simultaneous active socket connections |
+|**Mean Latency**|**0.55 ms**| Sub-millisecond response across all commands |
+|**P90 / P99 Latency**|**1.45 ms / 3.22 ms**| Low tail latency with minimal context-switch overhead |
+|**Data Consistency**|**100% (0% error rate)** | Zero race conditions under high lock contention |
 
 ### Running Benchmarks
 You can stress-test the local instance using standard socket load testing tools or our benchmark script:
@@ -146,7 +144,14 @@ java Main
 
 ## Why I built this ?
 
-**Situation:** Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
-**Task:** My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
-**Action:** I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
-**Result:** The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
+### Situation
+Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
+
+### Task
+My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
+
+### Action
+I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
+
+### Result
+The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
