@@ -1,19 +1,5 @@
 # MiniRedis (In-Memory Key-Value Store)
 
-## Why I built this ?
-
-### Situation
-Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
-
-### Task
-My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
-
-### Action
-I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
-
-### Result
-The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
-
 ---
 
 MiniRedis is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using Raw Java Sockets without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving sub-millisecond latencies and 94,600+ ops/sec throughput.
@@ -159,3 +145,19 @@ java Main
 ```
 
 ---
+
+---
+
+## Why I built this ?
+
+### Situation
+Understanding the internals of high-performance, in-memory data stores requires moving beyond high-level APIs and tackling raw TCP sockets and memory management.
+
+### Task
+My goal was to build a custom, lightweight clone of Redis from scratch, capable of handling concurrent client connections and standard Redis commands (GET, SET, DEL).
+
+### Action
+I implemented a custom TCP server and parsed the raw RESP (REdis Serialization Protocol). I designed thread-safe, concurrent hash maps for the underlying key-value storage and implemented an event loop architecture to efficiently multiplex incoming socket connections.
+
+### Result
+The resulting `MiniRedis` server successfully integrates with standard `redis-cli` clients, achieving high-throughput concurrent reads and writes while demonstrating a deep understanding of network programming and concurrency.
