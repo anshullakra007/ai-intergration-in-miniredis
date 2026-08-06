@@ -149,7 +149,7 @@ java Main
 
 ---
 
-## 🌟 STAR Story: MiniRedis
+## Why I built this ?
 
 **Situation:** 
 While building modern software applications, developing structured and scalable solutions is critical. The requirement was to build and maintain `MiniRedis` to address specific technical challenges and provide a robust implementation.
