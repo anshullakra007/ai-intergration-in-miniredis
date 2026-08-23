@@ -5,7 +5,7 @@
 MiniRedis is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using Raw Java Sockets without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving sub-millisecond latencies and 94,600+ ops/sec throughput.
 
  Live Server Address: [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
- Interactive Storybook Landing Page: Visit [https://miniredis.onrender.com](https://miniredis.onrender.com) in your browser to experience an interactive 5-Act real-time walkthrough, TCP Handshake simulator, Concurrency slider, and live In-Browser MiniRedis Terminal!
+
 
 ---
 
