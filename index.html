@@ -152,50 +152,9 @@
     .metric-val { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
     
     .footer-nav { border-top: var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; margin-top: auto;}
-    .retro-loader {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(17, 17, 17, 0.95);
-      z-index: 9999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      color: #00FF41;
-      font-family: 'IBM Plex Mono', monospace;
-    }
-    .retro-loader.visible {
-      opacity: 1;
-      pointer-events: all;
-    }
-    .retro-loader.hidden {
-      display: none !important;
-    }
-    .retro-loader-content {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.5rem;
-    }
-    .retro-cursor {
-      animation: blink 1s step-end infinite;
-    }
-    @keyframes blink { 50% { opacity: 0; } }
   </style>
 </head>
 <body>
-
-  <!-- RETRO LOADING OVERLAY -->
-  <div id="retro-loader" class="retro-loader hidden">
-    <div class="retro-loader-content">
-      <div id="retro-spinner" class="retro-spinner">|</div>
-      <div id="retro-text" class="retro-text">Booting instance...</div>
-      <div class="retro-cursor">_</div>
-    </div>
-  </div>
 
   <header class="nav-header">
     <div class="brand-name">
@@ -318,82 +277,6 @@
   </main>
 
   <script>
-    let isBackendAwake = false;
-
-    async function checkBackend() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch('https://miniredis.onrender.com', { cache: 'no-store', signal: controller.signal });
-        clearTimeout(timeoutId);
-        return res.ok;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    async function ensureBackendAwake() {
-      if (isBackendAwake) return true;
-      
-      return new Promise((resolve) => {
-        let hasResponded = false;
-        let loaderTimer = null;
-        let pollInterval = null;
-        let msgInterval = null;
-        let spinnerInterval = null;
-        
-        const poll = async () => {
-          const awake = await checkBackend();
-          if (awake && !hasResponded) {
-            hasResponded = true;
-            isBackendAwake = true;
-            cleanup();
-            resolve(true);
-          }
-        };
-        
-        poll(); // Initial check
-        pollInterval = setInterval(poll, 3000); // Poll every 3s
-        
-        // Show overlay if > 800ms
-        loaderTimer = setTimeout(() => {
-          if (hasResponded) return;
-          const loader = document.getElementById('retro-loader');
-          loader.classList.remove('hidden');
-          setTimeout(() => loader.classList.add('visible'), 10);
-          
-          let msgIdx = 0;
-          const msgs = ['Booting instance...', 'Initializing raw TCP sockets...', 'Allocating ConcurrentHashMap...', 'Awaiting connection...'];
-          const textEl = document.getElementById('retro-text');
-          const spinEl = document.getElementById('retro-spinner');
-          
-          textEl.innerText = msgs[msgIdx];
-          msgInterval = setInterval(() => {
-            msgIdx = (msgIdx + 1) % msgs.length;
-            textEl.innerText = msgs[msgIdx];
-          }, 4000);
-          
-          const frames = ['|', '/', '-', '\\'];
-          let sIdx = 0;
-          spinnerInterval = setInterval(() => {
-            sIdx = (sIdx + 1) % frames.length;
-            spinEl.innerText = frames[sIdx];
-          }, 100);
-          
-        }, 800);
-        
-        function cleanup() {
-          clearTimeout(loaderTimer);
-          clearInterval(pollInterval);
-          clearInterval(msgInterval);
-          clearInterval(spinnerInterval);
-          const loader = document.getElementById('retro-loader');
-          loader.classList.remove('visible');
-          setTimeout(() => loader.classList.add('hidden'), 300);
-        }
-      });
-    }
-
     function copyToClipboard(btn) {
       const text = 'nc localhost 6379';
       const span = btn.querySelector('.btn-text');
@@ -554,14 +437,10 @@
       else o.innerHTML = "> First byte: 'G' (from GET /)<br/>> Draining HTTP headers.<br/>> Serving index.html.";
     }
 
-    async function termRun(e) {
+    function termRun(e) {
       e.preventDefault(); const inp = document.getElementById('tin'); const cmd = inp.value.trim(); if(!cmd) return;
       inp.value = ''; const out = document.getElementById('tout');
       out.innerHTML += `<div>> ${cmd}</div>`;
-      out.scrollTop = out.scrollHeight;
-
-      await ensureBackendAwake();
-
       const p = cmd.split(' '); const a = p[0].toUpperCase(); let res = '';
       if(a==='SET'&&p.length>2) { kvStore[p[1]]=p.slice(2).join(' '); res='OK'; refreshTab(); }
       else if(a==='GET'&&p.length>1) { res = kvStore[p[1]] || '(nil)'; }
