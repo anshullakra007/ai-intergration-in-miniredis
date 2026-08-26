@@ -168,9 +168,9 @@
     <!-- LANDING PAGE VIEW -->
     <section id="view-landing" class="view-section active">
       <div class="hero">
-        <h1 class="hero-title">A raw TCP database built from scratch. <br/><span>No frameworks.</span></h1>
+        <h1 class="hero-title">A super fast storage box built from scratch. <br/><span>No extra baggage.</span></h1>
         <p class="hero-desc">
-          I built MiniRedis in Java to see exactly how data moves through sockets under the hood. It strips away heavy abstractions and communicates directly with the kernel.
+          I built MiniRedis from the ground up to learn how computers talk to each other! It skips all the extra, heavy stuff so it can run incredibly fast.
         </p>
         <div class="hero-actions">
           <button class="btn btn-primary" onclick="copyToClipboard(this)">
@@ -187,19 +187,19 @@
 
       <div class="grid-3">
         <div class="card">
-          <div class="hand" style="margin-bottom: 8px;">1 thread per connection</div>
-          <div class="card-title">Dedicated Workers</div>
-          <div class="card-body">Socket connections are immediately offloaded to a CachedThreadPool. Zero event-loop blocking.</div>
+          <div class="hand" style="margin-bottom: 8px;">No waiting!</div>
+          <div class="card-title">Personal Helpers</div>
+          <div class="card-body">The moment someone connects, they get their own dedicated helper so they never have to wait in line.</div>
         </div>
         <div class="card">
-          <div class="hand" style="margin-bottom: 8px;">CAS operations</div>
-          <div class="card-title">Lock-Free Store</div>
-          <div class="card-body">Uses a ConcurrentHashMap for lock-stripping. High throughput without global state locks.</div>
+          <div class="hand" style="margin-bottom: 8px;">Super safe!</div>
+          <div class="card-title">Safe Storage Box</div>
+          <div class="card-body">Hundreds of helpers can put data in and take data out at the exact same time without dropping anything.</div>
         </div>
         <div class="card">
-          <div class="hand" style="margin-bottom: 8px;">Byte inspection</div>
-          <div class="card-title">Protocol Router</div>
-          <div class="card-body">Inspects the first byte of a stream. Routes HTTP to web handlers, and TCP to the core database.</div>
+          <div class="hand" style="margin-bottom: 8px;">Very smart!</div>
+          <div class="card-title">Smart Door Guard</div>
+          <div class="card-body">A smart guard checks who is knocking. It hands web pages to browsers and connects terminals to the database.</div>
         </div>
       </div>
     </section>
@@ -310,33 +310,33 @@
 
     const stepsData = [
       {
-        title: "Kernel-level Sockets",
-        body: "MiniRedis bypasses heavy HTTP servers. It binds directly to the OS network interface on port 6379.",
-        note: "This removes massive overhead.",
+        title: "Connecting Directly",
+        body: "Instead of carrying heavy backpacks (like big web frameworks), MiniRedis travels light. It connects directly to the network port, meaning it receives messages instantly.",
+        note: "Super fast connections.",
         widget: "tcp"
       },
       {
-        title: "Thread-per-client Model",
-        body: "A CachedThreadPool spins up an isolated worker for every single connection. Work is done concurrently on multiple CPU cores.",
-        note: "Blocking operations don't stall the server.",
+        title: "Personal Helpers",
+        body: "Imagine a coffee shop where everyone waits in one long line. We fixed that! MiniRedis hires a new 'helper' instantly for every single user so nobody waits.",
+        note: "Everyone gets a helper.",
         widget: "slider"
       },
       {
-        title: "The Multiplexer",
-        body: "A custom protocol router peeks at the first byte of incoming data. It routes TCP packets to the DB engine, and drains HTTP packets to prevent stalls.",
-        note: "It figures out what you want instantly.",
+        title: "Smart Door Guard",
+        body: "Our server has a smart guard at the door. By looking at the very first letter of a message, it perfectly sorts out if you are a web browser or a terminal.",
+        note: "It knows who you are.",
         widget: "router"
       },
       {
-        title: "Concurrent Storage",
-        body: "Instead of locking the whole database during a write, it uses lock-stripping. Multiple threads can mutate the store safely at the exact same time.",
+        title: "Safe Storage Cabinet",
+        body: "If 500 helpers try to use the same filing cabinet at once, they crash. MiniRedis uses a super-smart cabinet where many drawers can open at once without traffic jams.",
         note: "Live demo below. Try it.",
         widget: "console"
       },
       {
-        title: "Performance",
-        body: "Testing under extreme synthetic load. Because of zero abstractions, latency stays incredibly flat even at high concurrency.",
-        note: "Mission accomplished.",
+        title: "The Speed Test",
+        body: "We tested MiniRedis with 500 users all pressing buttons at the exact same time. Because we removed all the heavy baggage, it didn't break a sweat.",
+        note: "It works perfectly.",
         widget: "benchmark"
       }
     ];
