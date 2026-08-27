@@ -1,21 +1,24 @@
 # MiniRedis (In-Memory Key-Value Store)
 
----
+![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)
+![Docker](https://img.shields.io/badge/Docker-Supported-blue?style=for-the-badge&logo=docker)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-MiniRedis is a lightweight, high-performance in-memory key-value storage engine engineered from scratch using Raw Java Sockets without any external frameworks. It mimics core Redis server capabilities by handling high-concurrency client connections via a custom text-based TCP protocol, achieving sub-millisecond latencies and 94,600+ ops/sec throughput.
+MiniRedis is a fast, lightweight in-memory key-value store I built from scratch using just raw Java Sockets—no external frameworks. It works a lot like a real Redis server, handling tons of simultaneous client connections with its own text-based TCP protocol. It's crazy fast too, hitting sub-millisecond latencies and over 94,600 ops/sec!
 
- Live Server Address: [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or Browser)*  
-
-
----
-
-## Problem Statement
-
-Standard Redis is a phenomenal tool, but its single-threaded event loop architecture can become a bottleneck in specific heavily multi-core environments, and its codebase is massive. The objective of this project was to engineer a lightweight, bare-metal alternative using Java raw sockets that leverages a multi-threaded `ConcurrentHashMap` architecture. This design proves that for certain key-value workloads, stripping away the overhead of a full database engine and utilizing modern Java concurrent structures can yield extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
+**Live Demo:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or your browser)*  
 
 ---
 
-## System Architecture & Threading Model
+## 🚀 The Problem
+
+Redis is an amazing tool, but its single-threaded event loop can sometimes become a bottleneck on heavily multi-core servers, and let's face it, the codebase is huge. I wanted to see if I could engineer a lightweight, bare-metal alternative using Java raw sockets and a multi-threaded `ConcurrentHashMap` architecture. 
+
+It turns out that for certain key-value workloads, skipping the overhead of a full database engine and just using modern Java concurrent structures can give you extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
+
+---
+
+## 🏗️ How It Works (Architecture & Threading)
 
 ```mermaid
 flowchart TB
@@ -56,25 +59,25 @@ flowchart TB
     Redis_Cmd -->|"Redis Response (+OK / $val)"| TCP_Client
 ```
 
-### Key Architectural Highlights
-1. Non-Blocking TCP Listener: A centralized `ServerSocket` listens on port `6379` and immediately offloads connection handling to an `ExecutorService`.
-2. Thread-Per-Client Concurrency: Each connected TCP client is serviced by a dedicated worker thread from a cached thread pool, eliminating I/O bottlenecks and ensuring isolated socket streams.
-3. Thread-Safe Memory Core: All key-value storage operations occur against an underlying `ConcurrentHashMap`, leveraging lock stripping and atomic bucket-level operations to prevent lock contention even under 500+ concurrent connections.
+### Key Highlights
+1. **Non-Blocking TCP Listener:** A centralized `ServerSocket` listens on port `6379` and instantly hands off new connections to an `ExecutorService`.
+2. **Thread-Per-Client Concurrency:** Every connected TCP client gets its own dedicated worker thread from a cached pool. This prevents I/O bottlenecks and keeps socket streams isolated.
+3. **Thread-Safe Memory Core:** All the data is stored in a `ConcurrentHashMap`. By taking advantage of lock stripping and atomic bucket-level operations, it avoids lock contention even when 500+ clients are connected at once.
 
 ---
 
-## Quickstart (30 Seconds with Docker)
+## ⚡ Quickstart (30 Seconds with Docker)
 
-Spin up the complete MiniRedis TCP server instantly using Docker Compose:
+You can spin up the full MiniRedis TCP server instantly using Docker Compose:
 
 ```bash
-# Clone the repository and start MiniRedis in detached mode
+# Clone the repository and start MiniRedis in the background
 docker-compose up -d --build
 ```
 
-The server will be live and listening on TCP Port `6379`.
+The server will be up and running on TCP Port `6379`.
 
-### Test with Netcat (`nc`)
+### Test it out with Netcat (`nc`)
 ```bash
 nc localhost 6379
 > SET user:1001 "Anshul Kumar"
@@ -85,22 +88,22 @@ Anshul Kumar
 
 ---
 
-## Performance Benchmarks & Stress Testing
+## 📊 Performance & Stress Testing
 
-MiniRedis was rigorously load-tested against concurrent client workloads to measure throughput, latency distribution, and thread-safety under heavy lock contention.
+I rigorously load-tested MiniRedis to see how it handles heavy traffic, measuring throughput, latency, and thread-safety under intense lock contention.
 
 | Metric | Result | Benchmark Conditions |
 | :--- | :--- | :--- |
-| Peak Throughput | 94,600+ ops/sec | 100% in-memory SET/GET operations |
-| Concurrent Clients | 500 connections | Simultaneous active socket connections |
-| Mean Latency | 0.55 ms | Sub-millisecond response across all commands |
-| P90 / P99 Latency | 1.45 ms / 3.22 ms | Low tail latency with minimal context-switch overhead |
-| Data Consistency | 100% (0% error rate) | Zero race conditions under high lock contention |
+| **Peak Throughput** | 94,600+ ops/sec | 100% in-memory SET/GET operations |
+| **Concurrent Clients** | 500 connections | Simultaneous active socket connections |
+| **Mean Latency** | 0.55 ms | Sub-millisecond response across all commands |
+| **P90 / P99 Latency** | 1.45 ms / 3.22 ms | Low tail latency with minimal overhead |
+| **Data Consistency** | 100% (0 errors) | Zero race conditions under high lock contention |
 
-### Running Benchmarks
-You can stress-test the local instance using standard socket load testing tools or our benchmark script:
+### Run the Benchmarks Yourself
+You can stress-test your local instance using standard socket load testing tools or the included Python script:
 ```bash
-# Example test using 500 concurrent connections over 10,000 requests
+# Example: 500 concurrent connections firing 5,000 requests
 python3 -c "
 import socket, time, concurrent.futures
 def send_req(i):
@@ -119,27 +122,27 @@ print(f'Completed 5,000 concurrent socket operations in {time.time()-start:.2f}s
 
 ---
 
-## Tech Stack & Supported Commands
+## 🛠 Tech Stack & Supported Commands
 
-* Language: Java 21 (Core JDK)
-* Networking: `java.net.ServerSocket`, `java.net.Socket` (Raw TCP/IP Sockets)
-* Concurrency: `java.util.concurrent.ExecutorService`, `ConcurrentHashMap`
-* Containerization: Docker, Docker Compose
+* **Language:** Java 21 (Core JDK)
+* **Networking:** `java.net.ServerSocket`, `java.net.Socket` (Raw TCP/IP Sockets)
+* **Concurrency:** `java.util.concurrent.ExecutorService`, `ConcurrentHashMap`
+* **Containerization:** Docker, Docker Compose
 
-### Custom Protocol Commands
-* `SET <key> <value>` — Stores a string value associated with the specified key.
-* `GET <key>` — Retrieves the stored string value for the key.
-* `DEL <key>` — Deletes the specified key from memory.
-* `PING` — Returns `PONG` to verify server health and connection liveness.
+### Commands
+* `SET <key> <value>` — Saves a string value to the specified key.
+* `GET <key>` — Grabs the stored string value for a key.
+* `DEL <key>` — Removes the key from memory.
+* `PING` — Returns `PONG` to check if the server is alive.
 
 ---
 
-## Native Local Execution (Without Docker)
+## 💻 Running Natively (Without Docker)
 
 ```bash
-# Compile Java source files
+# Compile the Java source files
 javac Main.java
 
-# Start server natively on port 6379
+# Start the server on port 6379
 java Main
 ```
