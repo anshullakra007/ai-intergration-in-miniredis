@@ -4,17 +4,22 @@
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue?style=for-the-badge&logo=docker)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-MiniRedis is a fast, lightweight in-memory key-value store I built from scratch using just raw Java Sockets—no external frameworks. It works a lot like a real Redis server, handling tons of simultaneous client connections with its own text-based TCP protocol. It's crazy fast too, hitting sub-millisecond latencies and over 94,600 ops/sec!
+MiniRedis is a fast, lightweight in-memory key-value store built from scratch using raw Java Sockets. It operates without any external frameworks. It handles many simultaneous client connections using its own text-based TCP protocol. It delivers high performance, achieving sub-millisecond latencies and high operations per second.
 
-**Live Demo:** [https://miniredis.onrender.com](https://miniredis.onrender.com) *(Connect via TCP Client / Netcat or your browser)*  
+Recently, MiniRedis was upgraded to include an AI-powered Vector Database and an Agentic Engine. This allows it to understand mathematical vectors, compute similarities, and intelligently cache AI prompts to save time and API costs.
+
+**Live Demo:** [https://ai-integration-miniredis.vercel.app](https://ai-integration-miniredis.vercel.app) (Frontend)  
+**Backend API:** [https://ai-miniredis.onrender.com](https://ai-miniredis.onrender.com) (TCP / HTTP endpoints)
 
 ---
 
 ## The Problem
 
-Redis is an amazing tool, but its single-threaded event loop can sometimes become a bottleneck on heavily multi-core servers, and let's face it, the codebase is huge. I wanted to see if I could engineer a lightweight, bare-metal alternative using Java raw sockets and a multi-threaded `ConcurrentHashMap` architecture. 
+Redis is a great tool, but its single-threaded event loop can become a bottleneck on multi-core servers. The codebase is also quite large. The goal was to build a lightweight, bare-metal alternative using Java raw sockets and a multi-threaded architecture. 
 
-It turns out that for certain key-value workloads, skipping the overhead of a full database engine and just using modern Java concurrent structures can give you extreme throughput (94,600+ ops/sec) with sub-millisecond latency.
+By using modern Java concurrent structures, this project achieves extreme throughput with sub-millisecond latency for standard key-value workloads.
+
+To make it even better, AI applications need a way to store and search mathematical vectors. Instead of relying on heavy external vector databases, this capability was built directly into MiniRedis natively.
 
 ---
 
@@ -35,113 +40,95 @@ flowchart TB
 
     subgraph Router ["Protocol Detection & Routing"]
         Check{"Is HTTP Request?"}
-        HTTP_Res["Serve Interactive Storybook (index.html)"]
-        Redis_Cmd["processCommand (SET / GET / DEL / PING)"]
+        HTTP_Res["Serve Landing Page (index.html)"]
+        Redis_Cmd["processCommand (SET / GET / VSET / ASK_AI)"]
     end
 
     subgraph Storage ["Thread-Safe In-Memory Core"]
-        Store[("ConcurrentHashMap (Lock-Stripped Store)")]
+        Store[("ConcurrentHashMap (Data Store)")]
+        VectorStore[("ConcurrentHashMap (Vector Store)")]
     end
 
     TCP_Client -->|"Raw TCP Stream"| Server
-    HTTP_Client -->|"HTTP GET / Health Check"| Server
+    HTTP_Client -->|"HTTP GET"| Server
 
     Server -->|"ServerSocket.accept()"| Pool
     Pool -->|"Spawn Worker"| Handler
     Handler -->|"First Line Parse"| Check
 
     Check -->|"Yes (HTTP Signature)"| HTTP_Res
-    Check -->|"No (Redis Protocol)"| Redis_Cmd
+    Check -->|"No (TCP Protocol)"| Redis_Cmd
 
-    Redis_Cmd <-->|"Atomic CAS / O(1) Access"| Store
+    Redis_Cmd <-->|"Text Data"| Store
+    Redis_Cmd <-->|"Vector Math"| VectorStore
 
-    HTTP_Res -->|"HTTP 200 OK (HTML)"| HTTP_Client
-    Redis_Cmd -->|"Redis Response (+OK / $val)"| TCP_Client
+    HTTP_Res -->|"HTTP 200 OK"| HTTP_Client
+    Redis_Cmd -->|"TCP Response"| TCP_Client
 ```
 
 ### Key Highlights
-1. **Non-Blocking TCP Listener:** A centralized `ServerSocket` listens on port `6379` and instantly hands off new connections to an `ExecutorService`.
-2. **Thread-Per-Client Concurrency:** Every connected TCP client gets its own dedicated worker thread from a cached pool. This prevents I/O bottlenecks and keeps socket streams isolated.
-3. **Thread-Safe Memory Core:** All the data is stored in a `ConcurrentHashMap`. By taking advantage of lock stripping and atomic bucket-level operations, it avoids lock contention even when 500+ clients are connected at once.
+1. **Non-Blocking TCP Listener:** A centralized socket listens on port 6379 and hands off new connections to a thread pool.
+2. **Thread-Per-Client Concurrency:** Every connected TCP client gets its own dedicated worker thread. This prevents bottlenecks and keeps socket streams isolated.
+3. **Thread-Safe Memory Core:** Data and vectors are stored in concurrent maps. This avoids lock contention even when many clients are connected at once.
+4. **Native AI Integration:** It communicates with the Google Gemini API using native Java HTTP clients without any bulky libraries.
+5. **Agentic Semantic Cache:** It converts user questions into vector embeddings and checks for similar past questions. If a match is found with high similarity, it returns the cached answer instantly. Otherwise, it queries the AI and caches the new response.
 
 ---
 
 ## Quickstart (30 Seconds with Docker)
 
-You can spin up the full MiniRedis TCP server instantly using Docker Compose:
+You can spin up the full MiniRedis TCP server using Docker Compose:
 
 ```bash
-# Clone the repository and start MiniRedis in the background
 docker-compose up -d --build
 ```
 
-The server will be up and running on TCP Port `6379`.
+The server will be up and running on TCP Port 6379. Make sure to set your Gemini API key in the environment to use the AI features.
 
-### Test it out with Netcat (`nc`)
+### Test it out with Netcat (nc)
 ```bash
 nc localhost 6379
 > SET user:1001 "Anshul Kumar"
 OK
 > GET user:1001
 Anshul Kumar
+> ASK_AI What is the capital of France?
+Paris.
+> ASK_AI Tell me the capital city of France
+Paris.
 ```
-
----
-
-## Performance & Stress Testing
-
-I rigorously load-tested MiniRedis to see how it handles heavy traffic, measuring throughput, latency, and thread-safety under intense lock contention.
-
-| Metric | Result | Benchmark Conditions |
-| :--- | :--- | :--- |
-| **Peak Throughput** | 94,600+ ops/sec | 100% in-memory SET/GET operations |
-| **Concurrent Clients** | 500 connections | Simultaneous active socket connections |
-| **Mean Latency** | 0.55 ms | Sub-millisecond response across all commands |
-| **P90 / P99 Latency** | 1.45 ms / 3.22 ms | Low tail latency with minimal overhead |
-| **Data Consistency** | 100% (0 errors) | Zero race conditions under high lock contention |
-
-### Run the Benchmarks Yourself
-You can stress-test your local instance using standard socket load testing tools or the included Python script:
-```bash
-# Example: 500 concurrent connections firing 5,000 requests
-python3 -c "
-import socket, time, concurrent.futures
-def send_req(i):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('localhost', 6379))
-    s.sendall(f'SET k{i} v{i}\r\n'.encode())
-    s.recv(1024)
-    s.close()
-
-start = time.time()
-with concurrent.futures.ThreadPoolExecutor(max_workers=500) as ex:
-    ex.map(send_req, range(5000))
-print(f'Completed 5,000 concurrent socket operations in {time.time()-start:.2f}s')
-"
-```
+*(The second ASK_AI command returns instantly from the semantic cache!)*
 
 ---
 
 ## Tech Stack & Supported Commands
 
 * **Language:** Java 21 (Core JDK)
-* **Networking:** `java.net.ServerSocket`, `java.net.Socket` (Raw TCP/IP Sockets)
-* **Concurrency:** `java.util.concurrent.ExecutorService`, `ConcurrentHashMap`
-* **Containerization:** Docker, Docker Compose
+* **Networking:** Raw TCP/IP Sockets
+* **Concurrency:** ExecutorService, ConcurrentHashMap
+* **AI:** Google Gemini API (via native java.net.http.HttpClient)
 
-### Commands
+### Standard Commands
 * `SET <key> <value>` — Saves a string value to the specified key.
 * `GET <key>` — Grabs the stored string value for a key.
 * `DEL <key>` — Removes the key from memory.
-* `PING` — Returns `PONG` to check if the server is alive.
+* `PING` — Returns PONG to check if the server is alive.
+
+### AI and Vector Commands
+* `VSET <key> <value1,value2...>` — Stores a mathematical vector (comma-separated floats).
+* `VSIMILAR <value1,value2...> <top_k>` — Calculates cosine similarity and returns the closest matching keys.
+* `ASK_AI <prompt>` — Asks a question. It will use the semantic cache first, and if not found, it will call the Gemini API and cache the result.
 
 ---
 
 ## Running Natively (Without Docker)
 
 ```bash
+# Export your API key
+export GEMINI_API_KEY="your-api-key"
+
 # Compile the Java source files
-javac Main.java
+javac Main.java GeminiClient.java
 
 # Start the server on port 6379
 java Main
