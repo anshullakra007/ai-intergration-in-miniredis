@@ -102,6 +102,23 @@ Paris.
 
 ---
 
+## Adding the Agentic AI and Improvements
+
+The addition of the Agentic AI engine transforms MiniRedis from a simple key-value store into a smart, semantic database. Here is how it was built and the improvements it brings:
+
+### How It Was Added
+1. **Vector Storage**: A secondary concurrent map was added to the core architecture specifically to hold mathematical representations of text (embeddings).
+2. **Native API Integration**: A custom, lightweight Java HTTP client was written from scratch to communicate with the Google Gemini API. This avoided adding bulky external libraries.
+3. **Similarity Engine**: A mathematical function was added to compute Cosine Similarity between vectors directly in memory.
+4. **Smart Commands**: The `ASK_AI` command was introduced to tie it all together, converting text to vectors, checking for similarities, and communicating with the AI model.
+
+### Improvements It Brings
+* **Instant Responses**: By using a semantic cache, if a user asks a question similar to one that has already been asked, the server returns the answer instantly from memory instead of waiting for the AI to generate it again.
+* **Cost Efficiency**: Semantic caching drastically reduces the number of API calls made to the AI model, saving money.
+* **Typo Tolerance**: Because the cache relies on mathematical meaning (vectors) rather than exact text matching, it can recognize that "What is the capital of France?" and "Tell me the capital city of france" mean the exact same thing.
+
+---
+
 ## Tech Stack & Supported Commands
 
 * **Language:** Java 21 (Core JDK)
