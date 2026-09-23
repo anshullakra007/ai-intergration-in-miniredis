@@ -1,3 +1,7 @@
+<div align="right">
+  <a href="https://ai-integration-miniredis.vercel.app">Live Demo</a> | <a href="https://ai-miniredis.onrender.com">Backend API</a>
+</div>
+
 # MiniRedis (In-Memory Key-Value Store)
 
 ![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)
@@ -7,9 +11,6 @@
 MiniRedis is a fast, lightweight in-memory key-value store built from scratch using raw Java Sockets. It operates without any external frameworks. It handles many simultaneous client connections using its own text-based TCP protocol. It delivers high performance, achieving sub-millisecond latencies and high operations per second.
 
 Recently, MiniRedis was upgraded to include an AI-powered Vector Database and an Agentic Engine. This allows it to understand mathematical vectors, compute similarities, and intelligently cache AI prompts to save time and API costs.
-
-**Live Demo:** [https://ai-integration-miniredis.vercel.app](https://ai-integration-miniredis.vercel.app) (Frontend)  
-**Backend API:** [https://ai-miniredis.onrender.com](https://ai-miniredis.onrender.com) (TCP / HTTP endpoints)
 
 ---
 
