@@ -1,9 +1,16 @@
-version: '3.8'
+# ==============================================================================
+# MiniRedis Docker Compose Configuration
+# ==============================================================================
 
 services:
   miniredis:
+    # Build the image from the local Dockerfile
     build: .
     container_name: miniredis
+    
+    # Map the host's port 6379 to the container's port 6379
     ports:
       - "6379:6379"
+      
+    # Ensure the container restarts automatically if it crashes
     restart: unless-stopped

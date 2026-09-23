@@ -1,14 +1,18 @@
-# Use a lightweight Java image
+# ==============================================================================
+# MiniRedis Dockerfile
+# ==============================================================================
+
+# Use a minimal, secure Alpine Linux based Java 21 image
 FROM eclipse-temurin:21-jdk-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy all project files (Main.java, etc.) into the container
+# Copy the project source files into the container
 COPY . .
 
-# Compile the Main.java file
+# Compile the Java source code
 RUN javac Main.java
 
-# Run the compiled Main class
+# Define the container's entrypoint command
 CMD ["java", "Main"]
